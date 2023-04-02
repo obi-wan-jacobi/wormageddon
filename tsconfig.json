@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "baseUrl": "src",
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": false,
+    "target": "ESNext",
+    "module": "CommonJS",
+    "sourceMap": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "moduleResolution": "node",
+    "noUnusedLocals": false,
+    "types": ["node", "jest"],
+    "paths": {
+      "@my-folder/*": ["my-folder/*"]
+    }
+  },
+  "ts-node": {
+    "esm": true
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules"]
+}
