@@ -19,8 +19,6 @@ export default class WormStateSystem extends System {
         worm.$add(AnimationComponent, {
           images: buildFrames(`./assets/wbrth1${f}.png`, 60, 60, 1200),
           frame: 0,
-          isPaused: false,
-          isReversed: false,
           isRollback: true,
           durationMs: 30,
         });
@@ -31,8 +29,6 @@ export default class WormStateSystem extends System {
         worm.$add(AnimationComponent, {
           images: buildFrames(`./assets/wwalk${f}.png`, 60, 60, 900, ocf * 0.667),
           frame: 0,
-          isPaused: false,
-          isReversed: false,
           durationMs: 30,
         });
         return;

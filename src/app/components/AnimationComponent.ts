@@ -4,8 +4,8 @@ import { IImage } from '@plasmastrapi/engine';
 export interface IAnimation {
   frame: number;
   images: IImage[];
-  isPaused: boolean;
-  isReversed: boolean;
+  isPaused?: boolean;
+  isReversed?: boolean;
   isRollback?: boolean;
   durationMs: number;
 }
