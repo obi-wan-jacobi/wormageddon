@@ -5,32 +5,42 @@ import { IViewport, RenderingSystem } from '@plasmastrapi/engine';
 
 export default class AnimationSystem extends RenderingSystem {
   public draw({ viewport, components }: { viewport: IViewport<any>; components: IComponentMaster }): void {
-    components.forEvery(AnimationComponent)((animation) => {
+    components.forEvery(AnimationComponent)((animationComponent) => {
       const now = Date.now();
-      const pose = getAbsolutePose(animation.$entity as IEntity);
+      const pose = getAbsolutePose(animationComponent.$entity as IEntity);
       // eslint-disable-next-line @typescript-eslint/naming-convention
-      const animationData = animation.copy() as IAnimation & { __tNextFrame?: number };
-      if (animationData.__tNextFrame === undefined) {
-        animationData.__tNextFrame = now + animationData.durationMs;
+      const animation = animationComponent.copy() as IAnimation & { __tNextFrame?: number };
+      if (animation.__tNextFrame === undefined) {
+        animation.__tNextFrame = now + animation.durationMs;
       }
-      if (!animationData.isPaused && now >= animationData.__tNextFrame) {
-        animationData.__tNextFrame = now + animationData.durationMs;
-        if (animationData.isReversed) {
-          animationData.frame--;
+      if (!animation.isPaused && now >= animation.__tNextFrame) {
+        animation.__tNextFrame = now + animation.durationMs;
+        if (animation.isReversed) {
+          animation.frame--;
         } else {
-          animationData.frame++;
+          animation.frame++;
         }
-        if (animationData.frame > animationData.images.length - 1) {
-          animationData.frame = 0;
+        if (animation.frame > animation.images.length - 1) {
+          if (animation.isRollback) {
+            animation.isReversed = true;
+            animation.frame = animation.images.length - 1;
+          } else {
+            animation.frame = 0;
+          }
         }
-        if (animationData.frame < 0) {
-          animationData.frame = animationData.images.length - 1;
+        if (animation.frame < 0) {
+          if (animation.isRollback) {
+            animation.isReversed = false;
+            animation.frame = 0;
+          } else {
+            animation.frame = animation.images.length - 1;
+          }
         }
       }
-      animation.mutate(animationData);
+      animationComponent.mutate(animation);
       viewport.drawImage({
         pose,
-        image: animationData.images[animationData.frame],
+        image: animation.images[animation.frame],
       });
     });
   }

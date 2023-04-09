@@ -22,7 +22,7 @@ export default class WormStateSystem extends System {
           isPaused: false,
           isReversed: false,
           isRollback: true,
-          durationMs: 50,
+          durationMs: 30,
         });
         return;
       }
