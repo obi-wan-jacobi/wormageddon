@@ -7,7 +7,15 @@ export default class App<TControllers extends Index<IController>> extends Engine
   public readonly root: IHTML5CanvasElement;
   public readonly controllers: TControllers;
 
-  public constructor({ canvas, controllers, systems }: { canvas: HTMLCanvasElement; controllers: TControllers; systems: Stor[] }) {
+  public constructor({
+    canvas,
+    controllers,
+    systems,
+  }: {
+    canvas: HTMLCanvasElement;
+    controllers: TControllers;
+    systems: Stor[];
+  }) {
     super({
       viewport: new HTML5CanvasViewport({ canvas }),
       systems,
@@ -21,8 +29,8 @@ export default class App<TControllers extends Index<IController>> extends Engine
     }
   }
 
-  // public once(): void {
-  //   super.once();
-  //   (this.controllers.game as any).once();
-  // }
+  public once(): void {
+    super.once();
+    (this.controllers.worm as any).once();
+  }
 }
