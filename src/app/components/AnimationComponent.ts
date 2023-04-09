@@ -6,6 +6,7 @@ export interface IAnimation {
   images: IImage[];
   isPaused: boolean;
   isReversed: boolean;
+  isRollback?: boolean;
   durationMs: number;
 }
 

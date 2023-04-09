@@ -8,6 +8,7 @@ import WormInputHandler from './input-handlers/WormInputHandler';
 import LevelController from './controllers/LevelController';
 import VelocitySystem from './systems/VelocitySystem';
 import AccelerationSystem from './systems/AccelerationSystem';
+import WormStateSystem from './systems/WormStateSystem';
 
 const canvas = document.getElementById('app-target') as HTMLCanvasElement;
 canvas.width = 1280;
@@ -31,10 +32,11 @@ export const app = new App({
     AnimationSystem,
     AccelerationSystem,
     VelocitySystem,
+    WormStateSystem,
   ],
 });
 
-app.load('./assets/wwalk.png');
+app.load('./assets/wwalkL.png');
 app.load('./assets/wwalkR.png');
 
 app.init();
