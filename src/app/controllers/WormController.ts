@@ -12,28 +12,28 @@ export default class WormController implements IController {
   }
 
   @SaveStoredState([WORM_FACING.LEFT, WORM_ACTION.WALK])
-  @OveriddenByAction(WORM_ACTION.JUMP)
+  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.WALK])
   @UpdateWormState([WORM_FACING.LEFT, WORM_ACTION.WALK])
   public startWalkingLeft(): void {}
 
   @SaveStoredState([WORM_FACING.RIGHT, WORM_ACTION.WALK])
-  @OveriddenByAction(WORM_ACTION.JUMP)
+  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.WALK])
   @UpdateWormState([WORM_FACING.RIGHT, WORM_ACTION.WALK])
   public startWalkingRight(): void {}
 
   @OveriddenByState([WORM_FACING.RIGHT, WORM_ACTION.WALK])
   @ClearStoredState
-  @OveriddenByAction(WORM_ACTION.JUMP)
+  @AllowedDuring([WORM_ACTION.WALK])
   @UpdateWormAction(WORM_ACTION.IDLE)
   public stopWalkingLeft(): void {}
 
   @OveriddenByState([WORM_FACING.LEFT, WORM_ACTION.WALK])
   @ClearStoredState
-  @OveriddenByAction(WORM_ACTION.JUMP)
+  @AllowedDuring([WORM_ACTION.WALK])
   @UpdateWormAction(WORM_ACTION.IDLE)
   public stopWalkingRight(): void {}
 
-  @OveriddenByAction(WORM_ACTION.JUMP)
+  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.WALK])
   @UpdateWormAction(WORM_ACTION.JUMP)
   public jumpForward(): void {}
 }
@@ -81,6 +81,19 @@ function OveriddenByAction(action: WORM_ACTION) {
     const fn = descriptor.value;
     descriptor.value = function (): void {
       if (action === this.__worm.$copy(WormStateComponent).action) {
+        return;
+      }
+      fn.apply(this, arguments);
+    };
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function AllowedDuring(actions: WORM_ACTION[]) {
+  return ({}, {}, descriptor: PropertyDescriptor): void => {
+    const fn = descriptor.value;
+    descriptor.value = function (): void {
+      if (!actions.includes(this.__worm.$copy(WormStateComponent).action)) {
         return;
       }
       fn.apply(this, arguments);

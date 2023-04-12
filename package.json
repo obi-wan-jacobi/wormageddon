@@ -1,5 +1,5 @@
 {
-  "name": "template-nodejs-ts",
+  "name": "wormageddon",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -12,12 +12,14 @@
   },
   "dependencies": {
     "@plasmastrapi/base": "^1.0.25",
-    "@plasmastrapi/diagnostics": "^1.0.16",
-    "@plasmastrapi/ecs": "^1.0.12",
-    "@plasmastrapi/engine": "^1.0.17",
-    "@plasmastrapi/geometry": "^1.0.7",
-    "@plasmastrapi/html5-canvas": "^1.0.8",
+    "@plasmastrapi/diagnostics": "^1.0.17",
+    "@plasmastrapi/ecs": "^1.0.15",
+    "@plasmastrapi/engine": "^1.0.19",
+    "@plasmastrapi/geometry": "^1.0.8",
+    "@plasmastrapi/helpers": "^1.0.10",
+    "@plasmastrapi/html5-canvas": "^1.0.9",
     "@plasmastrapi/physics": "^1.0.2",
+    "@plasmastrapi/viewport": "^1.0.0",
     "@turf/line-intersect": "^6.5.0"
   },
   "devDependencies": {

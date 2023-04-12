@@ -1,20 +1,20 @@
 import { IComponentMaster, IEntity } from '@plasmastrapi/ecs';
-import { getAbsolutePose } from '@plasmastrapi/geometry';
-import AnimationComponent, { IAnimation } from '../components/AnimationComponent';
-import { IViewport, RenderingSystem } from '@plasmastrapi/engine';
+import AnimationComponent from '../components/AnimationComponent';
+import { RenderingSystem } from '@plasmastrapi/engine';
+import { getAbsolutePose } from '@plasmastrapi/helpers';
+import { IViewport } from '@plasmastrapi/viewport';
 
 export default class AnimationSystem extends RenderingSystem {
   public draw({ viewport, components }: { viewport: IViewport<any>; components: IComponentMaster }): void {
     components.forEvery(AnimationComponent)((animationComponent) => {
       const now = Date.now();
       const pose = getAbsolutePose(animationComponent.$entity as IEntity);
-      // eslint-disable-next-line @typescript-eslint/naming-convention
-      const animation = animationComponent.copy() as IAnimation & { __tNextFrame?: number };
-      if (animation.__tNextFrame === undefined) {
-        animation.__tNextFrame = now + animation.durationMs;
+      const animation = animationComponent.copy();
+      if (animation.$ === undefined) {
+        animation.$ = { tNextFrame: now + animation.durationMs };
       }
-      if (!animation.isPaused && now >= animation.__tNextFrame) {
-        animation.__tNextFrame = now + animation.durationMs;
+      if (!animation.isPaused && now >= animation.$.tNextFrame) {
+        animation.$.tNextFrame = now + animation.durationMs;
         if (animation.isReversed) {
           animation.frame--;
         } else {

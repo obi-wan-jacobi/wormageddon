@@ -1,3 +1,4 @@
 export const GLOBAL = {
-  ACCELERATION: 1000,
+  GRAVITY: 500,
+  EPSILON: 0.00001,
 };
