@@ -1,4 +1,4 @@
 export enum WORM_FACING {
-  LEFT,
-  RIGHT,
+  LEFT = 'L',
+  RIGHT = 'R',
 }

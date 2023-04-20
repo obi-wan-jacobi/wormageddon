@@ -13,11 +13,11 @@ export interface IWormState {
   };
   $?: {
     previous?: {
+      heading: WORM_HEADING;
       facing: WORM_FACING;
       action: WORM_ACTION;
     };
     tNextAction?: number;
-    tNextStep?: number;
   };
 }
 

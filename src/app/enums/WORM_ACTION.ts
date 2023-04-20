@@ -1,6 +1,9 @@
 export enum WORM_ACTION {
+  IDLE,
+  AIM,
   WALK,
   JUMP,
-  IDLE,
+  ARC,
   AIR,
+  LAND,
 }

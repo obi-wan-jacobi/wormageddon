@@ -1,8 +1,6 @@
 import { IComponentMaster, PoseComponent, ShapeComponent, System } from '@plasmastrapi/ecs';
 import { fromPointsToGeoJSON, fromShapeToGeoJSON, getDirectionVectorAB, transformShape } from '@plasmastrapi/geometry';
-import { VelocityComponent } from '@plasmastrapi/physics';
-import { GLOBAL } from 'app/CONSTANTS';
-import LevelComponent from 'app/components/LevelComponent';
+import { LevelComponent, VelocityComponent } from '@plasmastrapi/physics';
 import WormStateComponent from 'app/components/WormStateComponent';
 import Worm from 'app/entities/Worm';
 import { WORM_ACTION } from 'app/enums/WORM_ACTION';
@@ -10,26 +8,23 @@ import { WORM_FACING } from 'app/enums/WORM_FACING';
 const lineIntersect = require('@turf/line-intersect').default;
 
 export default class WormWalkingSystem extends System {
-  public once({ components, delta }: { components: IComponentMaster; delta: number }): void {
+  public once({ components }: { components: IComponentMaster; delta: number }): void {
     components.forEvery(WormStateComponent)((wsComponent) => {
-      const { facing, action, $ } = wsComponent.copy();
+      const { facing, action } = wsComponent.copy();
       if (action !== WORM_ACTION.WALK) {
-        return;
-      }
-      if ($?.tNextStep && $.tNextStep > Date.now()) {
         return;
       }
       const worm = wsComponent.$entity as Worm;
       const f = facing === WORM_FACING.RIGHT ? 1 : -1;
-      const pose = worm.$copy(PoseComponent)!;
-      const speed = 100;
-      const stepSize = (speed * delta) / 1000;
-      const nextPose = { x: pose.x + f * stepSize, y: pose.y, a: pose.a };
-      // throw a vertical line forward, find the first intersection if one exists, then move a step in that direction
-      const steepnessThreshold = 10;
+      const pose = worm.$copy(PoseComponent);
+      // throw a vertical line forward, find the first intersection if one exists, then set velocity towards it
+      const lateralSpeed = 50;
+      const velocity = { x: f * lateralSpeed, y: 0, w: 0 };
+      const throwDistance = 0.5;
+      const steepnessThreshold = 100;
       const verticalLine = fromPointsToGeoJSON([
-        { x: nextPose.x, y: nextPose.y - steepnessThreshold },
-        { x: nextPose.x, y: nextPose.y + steepnessThreshold },
+        { x: pose.x + f * throwDistance, y: pose.y - steepnessThreshold },
+        { x: pose.x + f * throwDistance, y: pose.y + steepnessThreshold },
       ]);
       let isLevelIntersection = false;
       components.forEvery(LevelComponent)((levelComponent) => {
@@ -37,27 +32,24 @@ export default class WormWalkingSystem extends System {
           return;
         }
         const level = levelComponent.$entity;
-        const levelPose = level.$copy(PoseComponent)!;
-        const levelShape = level.$copy(ShapeComponent)!;
+        const levelPose = level.$copy(PoseComponent);
+        const levelShape = level.$copy(ShapeComponent);
         const levelGeoJSON = fromShapeToGeoJSON(transformShape(levelShape, levelPose));
         const intersections = lineIntersect(levelGeoJSON, verticalLine);
         if (intersections.features.length > 0) {
-          const [x, y] = intersections.features.shift().geometry.coordinates;
-          const uVector = getDirectionVectorAB(pose, { x, y });
-          nextPose.x = pose.x + uVector.x * stepSize;
-          nextPose.y = pose.y + uVector.y * stepSize;
-          nextPose.y -= GLOBAL.EPSILON;
+          const [x, y] = intersections.features[0].geometry.coordinates;
+          const uVector = getDirectionVectorAB(pose, { x, y: y - 1 });
+          velocity.x = uVector.x * lateralSpeed;
+          velocity.y = uVector.y * lateralSpeed;
           isLevelIntersection = true;
           return;
         }
       });
-      // otherwise give a nudge and fall
+      // otherwise fall
       if (!isLevelIntersection) {
         worm.$patch(WormStateComponent, { action: WORM_ACTION.AIR });
-        worm.$patch(VelocityComponent, { x: f * speed });
       }
-      worm.$patch(PoseComponent, nextPose);
-      worm.$patch(WormStateComponent, { $: { tNextStep: Date.now() + 30 } });
+      worm.$patch(VelocityComponent, velocity);
     });
   }
 }

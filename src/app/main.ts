@@ -2,14 +2,16 @@ import { FPSSystem } from '@plasmastrapi/diagnostics';
 import App from './App';
 import { ImageSystem, LabelSystem, LineSystem, PoseSystem, ShapeSystem } from '@plasmastrapi/engine';
 import { InputController } from '@plasmastrapi/html5-canvas';
-import AnimationSystem from './systems/AnimationSystem';
 import WormController from './controllers/WormController';
 import WormInputHandler from './input-handlers/WormInputHandler';
 import LevelController from './controllers/LevelController';
-import VelocitySystem from './systems/VelocitySystem';
-import AccelerationSystem from './systems/AccelerationSystem';
 import WormStateSystem from './systems/WormStateSystem';
 import WormWalkingSystem from './systems/WormWalkingSystem';
+import { AccelerationSystem, GravitySystem, ImpulseSystem, VelocitySystem } from '@plasmastrapi/physics';
+import WormHeadingSystem from './systems/WormHeadingSystem';
+import { AnimationSystem } from '@plasmastrapi/animation';
+import WormVelocitySystem from './systems/WormVelocitySystem';
+import WormReticleSystem from './systems/WormReticleSystem';
 
 const canvas = document.getElementById('app-target') as HTMLCanvasElement;
 canvas.width = 1280;
@@ -29,28 +31,61 @@ export const app = new App({
     LineSystem,
     LabelSystem,
     ImageSystem,
-    FPSSystem,
     AnimationSystem,
+    FPSSystem,
+    ImpulseSystem,
+    GravitySystem,
     AccelerationSystem,
     VelocitySystem,
+
+    WormVelocitySystem,
+    WormHeadingSystem,
     WormStateSystem,
     WormWalkingSystem,
+    WormReticleSystem,
   ],
 });
 
-// walk
-app.load('./assets/wwalkL.png');
-app.load('./assets/wwalkR.png');
 // breathe
-app.load('./assets/wbrth1L.png');
-app.load('./assets/wbrth1LD.png');
-app.load('./assets/wbrth1LU.png');
-app.load('./assets/wbrth1R.png');
-app.load('./assets/wbrth1RD.png');
-app.load('./assets/wbrth1RU.png');
+app.load('./assets/idle/wbrth1L.png');
+app.load('./assets/idle/wbrth1LD.png');
+app.load('./assets/idle/wbrth1LU.png');
+app.load('./assets/idle/wbrth1R.png');
+app.load('./assets/idle/wbrth1RD.png');
+app.load('./assets/idle/wbrth1RU.png');
+// walk
+app.load('./assets/walk/wwalkL.png');
+app.load('./assets/walk/wwalkLD.png');
+app.load('./assets/walk/wwalkLU.png');
+app.load('./assets/walk/wwalkR.png');
+app.load('./assets/walk/wwalkRD.png');
+app.load('./assets/walk/wwalkRU.png');
 // jump
-app.load('./assets/wjumpL.png');
-app.load('./assets/wjumpR.png');
+app.load('./assets/jump/wjumpL.png');
+app.load('./assets/jump/wjumpLD.png');
+app.load('./assets/jump/wjumpLU.png');
+app.load('./assets/jump/wjumpR.png');
+app.load('./assets/jump/wjumpRD.png');
+app.load('./assets/jump/wjumpRU.png');
+// arc
+app.load('./assets/arc/warcL.png');
+app.load('./assets/arc/warcR.png');
+// land
+app.load('./assets/land/wland1L.png');
+app.load('./assets/land/wland1LD.png');
+app.load('./assets/land/wland1LU.png');
+app.load('./assets/land/wland1R.png');
+app.load('./assets/land/wland1RD.png');
+app.load('./assets/land/wland1RU.png');
+// slide
+app.load('./assets/slide/wslideL.png');
+app.load('./assets/slide/wslideLD.png');
+app.load('./assets/slide/wslideLU.png');
+app.load('./assets/slide/wslideR.png');
+app.load('./assets/slide/wslideRD.png');
+app.load('./assets/slide/wslideRU.png');
+// crosshair
+app.load('./assets/crshairr.png');
 
 app.init();
 app.controllers.input.setHandler(WormInputHandler);
