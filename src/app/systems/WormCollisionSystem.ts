@@ -16,7 +16,7 @@ import Worm from 'app/entities/Worm';
 import { COLOUR } from '@plasmastrapi/engine';
 import Handle from 'app/entities/Handle';
 import { CONSTANTS } from 'app/CONSTANTS';
-import { isShallowEqual } from '@plasmastrapi/base';
+import { clone, isShallowEqual } from '@plasmastrapi/base';
 
 const STYLE_GREEN = { colour: 'lightgreen', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
 const STYLE_GREEN_BIG = { colour: 'lightgreen', fill: 'lightgreen', opacity: 1, zIndex: 9999 };
@@ -189,59 +189,86 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport: IViewport<any>
   for (const edge of newEdges) {
     highlightEdge(viewport, edge, STYLE_YELLOW);
   }
+  const newEdgesA: Edge[] = [];
   for (let i = 0; i < edgesA.length; i++) {
-    const edge = edgesA[i];
+    const edge = clone(edgesA[i]);
+    newEdgesA.push(edge);
+    const intersectionsB = findAllIntersections(edge[0], edge[1], edgesB);
+    const end = clone(edge[1]);
+    while (intersectionsB.length) {
+      const intersectionB = intersectionsB.shift()!;
+      newEdgesA.push([intersectionB.point, end]);
+      newEdgesA[newEdgesA.length - 2][1] = intersectionB.point;
+    }
+  }
+  // const llast = 99;
+  // for (let i = 0, L = newEdgesA.length; i < L && i <= llast; i++) {
+  //   highlightEdge(viewport, newEdgesA[i], STYLE_WHITE);
+  // }
+  const newEdgesB: Edge[] = [];
+  for (let i = 0; i < edgesB.length; i++) {
+    const edge = clone(edgesB[i]);
+    newEdgesB.push(edge);
+    const intersectionsA = findAllIntersections(edge[0], edge[1], edgesA);
+    const end = clone(edge[1]);
+    while (intersectionsA.length) {
+      const intersectionA = intersectionsA.shift()!;
+      if (!isShallowEqual(intersectionA.point, { x: edge[1].x, y: edge[1].y })) {
+        newEdgesB.push([intersectionA.point, end]);
+        newEdgesB[newEdgesB.length - 2][1] = intersectionA.point;
+      }
+    }
+  }
+  // const lllast = 30;
+  // for (let i = 0, L = newEdgesB.length; i < L && i <= lllast; i++) {
+  //   highlightEdge(viewport, newEdgesB[i], STYLE_WHITE);
+  // }
+  for (let i = 0; i < newEdgesA.length; i++) {
+    const edge = newEdgesA[i];
     const intersectionE = findIntersection(edge[0], edge[1], newEdges);
     if (intersectionE) {
-      edgesA.splice(i + 1, 0, [intersectionE.point, edge[1]]);
+      newEdgesA.splice(i + 1, 0, [intersectionE.point, clone(edge[1])]);
       edge[1] = intersectionE.point;
       i++;
     }
   }
-  for (let i = 0; i < edgesA.length; i++) {
-    const edge = edgesA[i];
-    const intersectionB = findIntersection(edge[0], edge[1], edgesB);
-    if (intersectionB) {
-      edgesA.splice(i + 1, 0, [intersectionB.point, edge[1]]);
-      edge[1] = intersectionB.point;
-      i++;
-    }
-  }
-  for (let i = 0; i < edgesB.length; i++) {
-    const edge = edgesB[i];
+  for (let i = 0; i < newEdgesB.length; i++) {
+    const edge = newEdgesB[i];
     const intersectionE = findIntersection(edge[0], edge[1], newEdges);
     if (intersectionE) {
-      edgesB.splice(i + 1, 0, [intersectionE.point, edge[1]]);
+      newEdgesB.splice(i + 1, 0, [intersectionE.point, clone(edge[1])]);
       edge[1] = intersectionE.point;
       i++;
     }
   }
-  for (let i = 0; i < edgesB.length; i++) {
-    const edge = edgesB[i];
-    const intersectionA = findIntersection(edge[0], edge[1], edgesA);
-    if (intersectionA) {
-      edgesB.splice(i + 1, 0, [intersectionA.point, edge[1]]);
-      edge[1] = intersectionA.point;
-      i++;
-    }
-  }
-  for (const edge of edgesA) {
-    highlightPoint(viewport, edge[1], STYLE_GREEN);
-  }
-  for (const edge of edgesB) {
-    highlightPoint(viewport, edge[1], STYLE_BLUE);
-  }
+  edgesA = newEdgesA;
+  edgesB = newEdgesB;
+  // const lllast = 7;
+  // for (let i = 0, L = newEdgesA.length; i < L && i <= lllast; i++) {
+  //   highlightEdge(viewport, newEdgesA[i], STYLE_WHITE);
+  // }
+  // for (const edge of edgesA) {
+  //   highlightPoint(viewport, edge[1], STYLE_GREEN);
+  // }
+  // for (const edge of edgesB) {
+  //   highlightPoint(viewport, edge[1], STYLE_BLUE);
+  // }
   idx = newEdges.findIndex((edge) => isShallowEqual(edge, startingEdge!));
+  // highlightEdge(viewport, newEdges[idx], STYLE_RED);
   newEdges = rotateArray(newEdges, idx);
   idx = findNextEdge(newEdges[0][0], edgesA);
   edgesA = rotateArray(edgesA, idx);
-  edgesA.push(edgesA[0]);
+  // highlightEdge(viewport, edgesA[idx], STYLE_RED);
+  // edgesA.push(edgesA[0]);
+  idx = findNextEdge(newEdges[0][1], edgesB);
+  // highlightEdge(viewport, edgesB[idx], STYLE_RED);
   edgesB = rotateArray(edgesB, idx);
-  edgesB.push(edgesB[0]);
+  // highlightEdge(viewport, edgesB[idx], STYLE_RED);
+  // edgesB.push(edgesB[0]);
   const extrusionEdges: Edge[] = [];
   const vertices: IPoint[] = [];
   let i = 0;
-  const last = 40;
+  const last = 99;
   while (edgesA.length && edgesB.length && newEdges.length && i <= last) {
     if (i === last) {
       console.log('hi');
@@ -253,8 +280,8 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport: IViewport<any>
       if (newEdges[idxE][2] === EDGE_TYPE.OUTER) {
         [edgesA, edgesB] = [edgesB, edgesA];
       }
-      const vertex0 =
-        edge[1].x === newEdges[idxE][0].x && edge[1].y === newEdges[idxE][0].y ? newEdges[idxE][0] : newEdges[idxE][1];
+      // const vertex0 =
+      //   edge[1].x === newEdges[idxE][0].x && edge[1].y === newEdges[idxE][0].y ? newEdges[idxE][0] : newEdges[idxE][1];
       const vertex1 =
         edge[1].x === newEdges[idxE][0].x && edge[1].y === newEdges[idxE][0].y ? newEdges[idxE][1] : newEdges[idxE][0];
       highlightPoint(viewport, vertex1, STYLE_RED);
@@ -285,12 +312,16 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport: IViewport<any>
   for (const edge of extrusionEdges) {
     highlightEdge(viewport, edge, STYLE_WHITE);
   }
-  for (const edge of edgesA) {
-    highlightEdge(viewport, edge, STYLE_GREEN);
-  }
-  for (const edge of edgesB) {
-    highlightEdge(viewport, edge, STYLE_BLUE);
-  }
+  // for (const edge of edgesA) {
+  //   highlightEdge(viewport, edge, STYLE_GREEN);
+  // }
+  // for (const edge of edgesB) {
+  //   highlightEdge(viewport, edge, STYLE_BLUE);
+  // }
+  // const llast = 18;
+  // for (let i = 0, L = edgesB.length; i < L && i <= llast; i++) {
+  //   highlightEdge(viewport, edgesB[i], STYLE_BLUE);
+  // }
   return { vertices };
 }
 
@@ -407,6 +438,12 @@ function findIntersection(
   options?: IFindIntersectionOptions,
 ): IIntersection | undefined {
   options = options || { isIncludeStart: false, isIncludeEnd: false };
+  const intersections = findAllIntersections(start, end, edges, options);
+  return intersections.length ? intersections[0] : undefined;
+}
+
+function findAllIntersections(start: IPoint, end: IPoint, edges: Edge[], options?: IFindIntersectionOptions): IIntersection[] {
+  options = options || { isIncludeStart: false, isIncludeEnd: false };
   const intersections: [IPoint, number][] = edges
     .map((edge, idx) => {
       return [lineIntersect(fromPointsToGeoJSON([start, end]), fromPointsToGeoJSON([edge[0], edge[1]])), idx];
@@ -433,13 +470,11 @@ function findIntersection(
       getEuclideanDistanceBetweenPoints(start, { x: x1, y: y1 }) - getEuclideanDistanceBetweenPoints(start, { x: x2, y: y2 })
     );
   });
-  return intersections.length
-    ? {
-        point: intersections[0][0],
-        index: intersections[0][1],
-        distance: getEuclideanDistanceBetweenPoints(start, intersections[0][0]),
-      }
-    : undefined;
+  return intersections.map(([intersection, idx]) => ({
+    point: intersection,
+    index: idx,
+    distance: getEuclideanDistanceBetweenPoints(start, intersection),
+  }));
 }
 
 function findNewEdge(point: IPoint, edges: Edge[]): number {
