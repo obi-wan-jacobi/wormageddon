@@ -45,6 +45,7 @@ export default class WormCollisionSystem extends System {
       // const nextPose = { x, y, a };
       const prevPose = { x: 1280 / 2, y: 720 / 2, a: 0 };
       const nextPose = handle.$copy(PoseComponent);
+      // const nextPose = { x: 640, y: 379, a: 0 };
       // const nextPose = { x: 250.39999389648438, y: 126.89599609375, a: 0 };
       // const nextPose = { x: 300, y: 450, a: 0 };
       // const nextPose = { x: 640, y: 200, a: 0 };
@@ -250,9 +251,9 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport: IViewport<any>
   // for (const edge of edgesA) {
   //   highlightPoint(viewport, edge[1], STYLE_GREEN);
   // }
-  // for (const edge of edgesB) {
-  //   highlightPoint(viewport, edge[1], STYLE_BLUE);
-  // }
+  for (const edge of edgesB) {
+    highlightPoint(viewport, edge[1], STYLE_BLUE);
+  }
   idx = newEdges.findIndex((edge) => isShallowEqual(edge, startingEdge!));
   // highlightEdge(viewport, newEdges[idx], STYLE_RED);
   newEdges = rotateArray(newEdges, idx);
@@ -312,12 +313,12 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport: IViewport<any>
   for (const edge of extrusionEdges) {
     highlightEdge(viewport, edge, STYLE_WHITE);
   }
-  // for (const edge of edgesA) {
-  //   highlightEdge(viewport, edge, STYLE_GREEN);
-  // }
-  // for (const edge of edgesB) {
-  //   highlightEdge(viewport, edge, STYLE_BLUE);
-  // }
+  for (const edge of edgesA) {
+    highlightEdge(viewport, edge, STYLE_GREEN);
+  }
+  for (const edge of edgesB) {
+    highlightEdge(viewport, edge, STYLE_BLUE);
+  }
   // const llast = 18;
   // for (let i = 0, L = edgesB.length; i < L && i <= llast; i++) {
   //   highlightEdge(viewport, edgesB[i], STYLE_BLUE);
@@ -483,8 +484,8 @@ function findNewEdge(point: IPoint, edges: Edge[]): number {
   });
 }
 
-function findNextEdge(start: IPoint, edges: Edge[]): number {
+function findNextEdge(start: IPoint, edges: Edge[], epsilon = 0.000001): number {
   return edges.findIndex((edge) => {
-    return Math.abs(start.x - edge[0].x) < CONSTANTS.EPSILON && Math.abs(start.y - edge[0].y) < CONSTANTS.EPSILON;
+    return Math.abs(start.x - edge[0].x) <= epsilon && Math.abs(start.y - edge[0].y) <= epsilon;
   });
 }
