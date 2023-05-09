@@ -12,6 +12,9 @@ import WormHeadingSystem from './systems/WormHeadingSystem';
 import { AnimationSystem } from '@plasmastrapi/animation';
 import WormVelocitySystem from './systems/WormVelocitySystem';
 import WormReticleSystem from './systems/WormReticleSystem';
+import WormCollisionSystem from './systems/WormCollisionSystem';
+import HandleController from './controllers/HandleController';
+import HandleInputHandler from './input-handlers/HandleInputHandler';
 
 const canvas = document.getElementById('app-target') as HTMLCanvasElement;
 canvas.width = 1280;
@@ -23,7 +26,8 @@ export const app = new App({
   controllers: {
     input: new InputController({ canvas }),
     worm: new WormController(),
-    level: new LevelController(),
+    // level: new LevelController(),
+    handle: new HandleController(),
   },
   systems: [
     PoseSystem,
@@ -38,6 +42,7 @@ export const app = new App({
     AccelerationSystem,
     VelocitySystem,
 
+    WormCollisionSystem,
     WormVelocitySystem,
     WormHeadingSystem,
     WormStateSystem,
@@ -88,5 +93,5 @@ app.load('./assets/slide/wslideRU.png');
 app.load('./assets/crshairr.png');
 
 app.init();
-app.controllers.input.setHandler(WormInputHandler);
+app.controllers.input.setHandler(HandleInputHandler);
 app.start();

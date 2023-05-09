@@ -16,10 +16,10 @@ export default class Worm extends HTML5CanvasElement {
     this.$add(PoseComponent, { x, y, a: 0 });
     this.$add(ShapeComponent, {
       vertices: [
-        { x: -5, y: 0 },
-        { x: -5, y: -24 },
-        { x: 5, y: -24 },
-        { x: 5, y: 0 },
+        { x: -5, y: 12 },
+        { x: -5, y: -12 },
+        { x: 5, y: -12 },
+        { x: 5, y: 12 },
       ],
     });
     this.$add(WormStateComponent, {

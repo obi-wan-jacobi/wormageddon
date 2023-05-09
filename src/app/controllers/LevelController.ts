@@ -4,8 +4,6 @@ import { LevelComponent } from '@plasmastrapi/physics';
 import { app } from 'app/main';
 
 export default class LevelController implements IController {
-  private __worm: HTML5CanvasElement;
-
   public init(): void {
     new HTML5CanvasElement()
       .$add(LevelComponent, {})
@@ -31,16 +29,16 @@ export default class LevelController implements IController {
         ],
       });
 
-    new HTML5CanvasElement()
-      .$add(LevelComponent, {})
-      .$add(PoseComponent, { x: app.viewport.width / 2, y: app.viewport.height / 2, a: 0 })
-      .$add(ShapeComponent, {
-        vertices: [
-          { x: -400, y: -90 },
-          { x: -400, y: -150 },
-          { x: 600, y: -150 },
-          { x: 600, y: -90 },
-        ],
-      });
+    // new HTML5CanvasElement()
+    //   .$add(LevelComponent, {})
+    //   .$add(PoseComponent, { x: app.viewport.width / 2, y: app.viewport.height / 2, a: 0 })
+    //   .$add(ShapeComponent, {
+    //     vertices: [
+    //       { x: -400, y: -90 },
+    //       { x: -400, y: -150 },
+    //       { x: 600, y: -150 },
+    //       { x: 600, y: -90 },
+    //     ],
+    //   });
   }
 }

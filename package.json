@@ -16,7 +16,7 @@
     "@plasmastrapi/diagnostics": "^1.0.17",
     "@plasmastrapi/ecs": "^1.0.20",
     "@plasmastrapi/engine": "^1.0.22",
-    "@plasmastrapi/geometry": "^1.0.17",
+    "@plasmastrapi/geometry": "^1.0.18",
     "@plasmastrapi/helpers": "^1.0.14",
     "@plasmastrapi/html5-canvas": "^1.0.9",
     "@plasmastrapi/math": "^1.0.2",
@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.1",
-    "@types/node": "^18.7.16",
+    "@types/node": "^18.15.12",
     "@typescript-eslint/eslint-plugin": "^4.28.3",
     "@typescript-eslint/parser": "^4.28.3",
     "@webpack-cli/serve": "^2.0.1",
@@ -47,7 +47,7 @@
     "tsconfig-paths": "^4.1.1",
     "tsconfig-paths-webpack-plugin": "^4.0.1",
     "typescript": "^5.0.4",
-    "webpack": "^5.79.0",
+    "webpack": "^5.80.0",
     "webpack-cli": "^4.8.0",
     "webpack-dev-server": "^4.13.3"
   },

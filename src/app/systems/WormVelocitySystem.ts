@@ -31,6 +31,8 @@ export default class WormVelocitySystem extends System {
       let motionPath = fromPointsToGeoJSON([prevPose, nextPose]);
       let isLevelIntersection = false;
       let vNext = Vector.expand(v);
+      const cFriction = 0;
+      const cRestitution = 0;
       components.forEvery(LevelComponent)((levelComponent) => {
         if (isLevelIntersection) {
           return;
@@ -40,12 +42,6 @@ export default class WormVelocitySystem extends System {
           const [x, y] = intersections.features[0].geometry.coordinates;
           if (isShallowEqual({ x: prevPose.x, y: prevPose.y }, { x, y }, true)) {
             // we've landed!
-            let cFriction = 0;
-            let cRestitution = 0;
-            if (action === WORM_ACTION.ARC) {
-              cFriction = 1;
-              cRestitution = 1;
-            }
             vNext = getResultantVelocityAfterCollision({
               levelComponent,
               pointOfCollision: { x, y },
@@ -70,8 +66,8 @@ export default class WormVelocitySystem extends System {
               levelComponent,
               pointOfCollision: { x, y },
               velocityVector: v,
-              cFriction: 1,
-              cRestitution: 0.3,
+              cFriction,
+              cRestitution,
             });
           }
           isLevelIntersection = true;
