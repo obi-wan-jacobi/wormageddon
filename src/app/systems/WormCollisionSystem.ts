@@ -3,6 +3,7 @@ import {
   IPoint,
   IPose,
   IShape,
+  Vector,
   booleanPointInPolygon,
   fromGeoJSONCoordinatesToShapes,
   fromPointsToGeoJSON,
@@ -52,60 +53,29 @@ export default class WormCollisionSystem extends System {
       // const nextPose = { x: 380, y: 190, a: 0 };
       // const nextPose = { x: 48, y: 400, a: 0 };
       // const nextPose = { x: 600, y: 400, a: 0 };
-      // const nextPose = { x: 300, y: 400, a: 0 };
+      // const nextPose = { x: 550, y: 338, a: 0 };
       const testShape = {
         vertices: [
-          { x: 0, y: -5 },
-          { x: 10, y: -5 },
-          { x: 10, y: -50 },
-          { x: 50, y: -50 },
-          { x: 50, y: -40 },
-          { x: 20, y: -40 },
-          { x: 20, y: -5 },
-          { x: 200, y: -5 },
-          { x: 200, y: 5 },
-          { x: 20, y: 5 },
-          { x: 20, y: 40 },
-          { x: 50, y: 40 },
-          { x: 50, y: 50 },
-          { x: 10, y: 50 },
-          { x: 10, y: 5 },
-          { x: 0, y: 5 },
-          { x: -10, y: 5 },
-          { x: -10, y: 50 },
-          { x: -50, y: 50 },
-          { x: -50, y: 40 },
-          { x: -20, y: 40 },
-          { x: -20, y: 5 },
-          { x: -200, y: 5 },
-          { x: -200, y: -5 },
-          { x: -20, y: -5 },
-          { x: -20, y: -40 },
-          { x: -50, y: -40 },
           { x: -50, y: -50 },
-          { x: -10, y: -50 },
-          { x: -10, y: -5 },
+          { x: 50, y: -50 },
+          { x: 50, y: 50 },
+          { x: 25, y: 100 },
+          { x: 10, y: -10 },
+          { x: -50, y: 50 },
         ],
       };
       const extrusion = extrude(testShape, prevPose, nextPose, viewport);
+      for (let i = 0, L = extrusion.vertices.length; i < L - 1; i++) {
+        highlightEdge(viewport, [extrusion.vertices[i], extrusion.vertices[i + 1]], STYLE_RED);
+      }
       components.forEvery(LevelComponent)((levelComponent) => {
-        // const level = levelComponent.$entity;
-        // const levelShape = fromShapeToGeoJSON(transformShape(level.$copy(ShapeComponent), level.$copy(PoseComponent)));
-        // const intersection = intersect(fromShapeToGeoJSON(extrusion), levelShape);
-        // if (intersection) {
-        //   const overlap = fromGeoJSONCoordinatesToShapes(intersection)[0];
-        //   viewport.drawShape({ path: overlap.vertices, style: STYLE_GREEN });
-        //   const minTranslationVector = separateShapes(
-        //     extrusion,
-        //     transformShape(level.$copy(ShapeComponent), level.$copy(PoseComponent)),
-        //     { x: -1, y: -1 },
-        //   )!;
-        //   highlightEdge(
-        //     viewport,
-        //     [nextPose, { x: nextPose.x + minTranslationVector?.x, y: nextPose.y + minTranslationVector?.y }],
-        //     STYLE_RED,
-        //   );
-        // }
+        const level = levelComponent.$entity;
+        const levelShape = fromShapeToGeoJSON(transformShape(level.$copy(ShapeComponent), level.$copy(PoseComponent)));
+        const intersection = intersect(fromShapeToGeoJSON(extrusion), levelShape);
+        if (intersection) {
+          const overlap = fromGeoJSONCoordinatesToShapes(intersection)[0];
+          viewport.drawShape({ path: overlap.vertices, style: STYLE_RED });
+        }
       });
     });
   }
@@ -148,9 +118,6 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any
   for (let i = 0, L = a.length; i < L; i++) {
     const intersectionA = findIntersection(a[i], b[i], edgesA, { isIncludeEnd: true });
     const intersectionB = findIntersection(b[i], a[i], edgesB, { isIncludeEnd: true });
-    if (intersectionA && intersectionB) {
-      console.log('hello');
-    }
     if (intersectionA && !intersectionB) {
       const midPoint = [(a[i].x + intersectionA.point.x) / 2, (a[i].y + intersectionA.point.y) / 2];
       if (
@@ -178,9 +145,9 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any
       }
     }
   }
-  for (const edge of newEdges) {
-    highlightEdge(viewport, edge, STYLE_YELLOW);
-  }
+  // for (const edge of newEdges) {
+  //   highlightEdge(viewport, edge, STYLE_YELLOW);
+  // }
   for (const edge of edgesA) {
     highlightEdge(viewport, edge, STYLE_GREEN);
   }
@@ -195,8 +162,10 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any
     const end = clone(edge[1]);
     while (intersectionsB.length) {
       const intersectionB = intersectionsB.shift()!;
-      newEdgesA.push([intersectionB.point, end]);
-      newEdgesA[newEdgesA.length - 2][1] = intersectionB.point;
+      if (!isRoughlyEqual(intersectionB.point, { x: edge[1].x, y: edge[1].y })) {
+        newEdgesA.push([intersectionB.point, end]);
+        newEdgesA[newEdgesA.length - 2][1] = intersectionB.point;
+      }
     }
   }
   const newEdgesB: Edge[] = [];
@@ -207,7 +176,7 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any
     const end = clone(edge[1]);
     while (intersectionsA.length) {
       const intersectionA = intersectionsA.shift()!;
-      if (!isShallowEqual(intersectionA.point, { x: edge[1].x, y: edge[1].y })) {
+      if (!isRoughlyEqual(intersectionA.point, { x: edge[1].x, y: edge[1].y })) {
         newEdgesB.push([intersectionA.point, end]);
         newEdgesB[newEdgesB.length - 2][1] = intersectionA.point;
       }
@@ -217,7 +186,7 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any
     const edge = newEdgesA[i];
     const intersectionE = findIntersection(edge[0], edge[1], newEdges, { isIncludeEnd: true });
     if (intersectionE) {
-      if (!isShallowEqual(intersectionE.point, clone(edge[1]))) {
+      if (!isRoughlyEqual(intersectionE.point, clone(edge[1]))) {
         newEdgesA.splice(i + 1, 0, [intersectionE.point, clone(edge[1])]);
         edge[1] = intersectionE.point;
         i++;
@@ -228,7 +197,7 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any
     const edge = newEdgesB[i];
     const intersectionE = findIntersection(edge[0], edge[1], newEdges, { isIncludeEnd: true });
     if (intersectionE) {
-      if (!isShallowEqual(intersectionE.point, clone(edge[1]))) {
+      if (!isRoughlyEqual(intersectionE.point, clone(edge[1]))) {
         newEdgesB.splice(i + 1, 0, [intersectionE.point, clone(edge[1])]);
         edge[1] = intersectionE.point;
         i++;
@@ -237,6 +206,12 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any
   }
   edgesA = newEdgesA;
   edgesB = newEdgesB;
+  for (const edge of edgesA) {
+    highlightPoint(viewport, edge[0], STYLE_GREEN);
+  }
+  for (const edge of edgesB) {
+    highlightPoint(viewport, edge[0], STYLE_BLUE);
+  }
   idx = newEdges.findIndex((edge) => isShallowEqual(edge, startingEdge!));
   newEdges = rotateArray(newEdges, idx);
   idx = findNextEdge(newEdges[0][0], edgesA);
@@ -244,9 +219,7 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any
   idx = findNextEdge(newEdges[0][1], edgesB);
   edgesB = rotateArray(edgesB, idx);
   const extrusionEdges: Edge[] = [];
-  let i = 0;
-  const last = Number.POSITIVE_INFINITY;
-  while (edgesA.length && edgesB.length && newEdges.length && i <= last) {
+  while (edgesA.length && edgesB.length && newEdges.length) {
     const edge = edgesA.shift()!;
     extrusionEdges.push(edge);
     const idxE = findEdgeWithVertex(edge[1], newEdges);
@@ -265,7 +238,7 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any
         edgesA.shift();
         counter--;
       }
-      i++;
+      // i++;
       continue;
     }
     const idxB = findNextEdge(edge[1], edgesB);
@@ -277,7 +250,7 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any
       }
       [edgesA, edgesB] = [edgesB, edgesA];
     }
-    i++;
+    // i++;
   }
   for (const edge of extrusionEdges) {
     highlightEdge(viewport, edge, STYLE_WHITE);
@@ -288,13 +261,16 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any
   // for (const edge of edgesB) {
   //   highlightEdge(viewport, edge, STYLE_BLUE);
   // }
+  const vertices: IPoint[] = [];
+  for (let i = 0, L = extrusionEdges.length; i < L - 1; i++) {
+    vertices.push(extrusionEdges[i][0]);
+    vertices.push(extrusionEdges[i][1]);
+    if (isRoughlyEqual(extrusionEdges[i][1], extrusionEdges[i + 1][0])) {
+      i++;
+    }
+  }
   return {
-    vertices: extrusionEdges
-      .map((edge) => edge[0])
-      .filter((value, index, array) => {
-        return array.indexOf(value) === index;
-      })
-      .slice(0, extrusionEdges.length - 2),
+    vertices,
   };
 }
 
@@ -419,32 +395,11 @@ function findAllIntersections(
   options = Object.assign({ epsilon: 0.000001, isIncludeStart: false, isIncludeEnd: false }, options);
   return edges
     .map((edge, idx) => {
-      const from = edge[0];
-      const to = edge[1];
-      if (Math.abs(start.x - edge[0].x) <= options.epsilon!) {
-        from.x = start.x;
-      }
-      if (Math.abs(start.y - edge[0].y) <= options.epsilon!) {
-        from.y = start.y;
-      }
-      if (Math.abs(end.x - edge[0].x) <= options.epsilon!) {
-        from.x = end.x;
-      }
-      if (Math.abs(end.y - edge[0].y) <= options.epsilon!) {
-        from.y = end.y;
-      }
-      if (Math.abs(start.x - edge[1].x) <= options.epsilon!) {
-        to.x = start.x;
-      }
-      if (Math.abs(start.y - edge[1].y) <= options.epsilon!) {
-        to.y = start.y;
-      }
-      if (Math.abs(end.x - edge[1].x) <= options.epsilon!) {
-        to.x = end.x;
-      }
-      if (Math.abs(end.y - edge[1].y) <= options.epsilon!) {
-        to.y = end.y;
-      }
+      let from = edge[0];
+      let to = edge[1];
+      const u = Vector.normalizeFromPoints(from, to);
+      from = { x: from.x - u.direction.x * options.epsilon!, y: from.y - u.direction.y * options.epsilon! };
+      to = { x: to.x + u.direction.x * options.epsilon!, y: to.y + u.direction.y * options.epsilon! };
       return [lineIntersect(fromPointsToGeoJSON([start, end]), fromPointsToGeoJSON([from, to])), idx];
     })
     .filter(([intersection]) => {
@@ -452,10 +407,12 @@ function findAllIntersections(
       if (isValidIntersection) {
         const [x, y] = intersection.features[0].geometry.coordinates;
         if (options && options.isIncludeStart === false) {
-          isValidIntersection = isValidIntersection && !(start.x === x && start.y === y);
+          isValidIntersection =
+            isValidIntersection && !(Math.abs(start.x - x) <= options.epsilon! && Math.abs(start.y - y) <= options.epsilon!);
         }
         if (options && options.isIncludeEnd === false) {
-          isValidIntersection = isValidIntersection && !(end.x === x && end.y === y);
+          isValidIntersection =
+            isValidIntersection && !(Math.abs(end.x - x) <= options.epsilon! && Math.abs(end.y - y) <= options.epsilon!);
         }
       }
       return isValidIntersection;
@@ -491,135 +448,6 @@ function findNextEdge(start: IPoint, edges: Edge[], epsilon = 0.000001): number 
   });
 }
 
-function separateShapes(shapeA: IShape, shapeB: IShape, moveVector: { x: number; y: number }) {
-  const minTranslationVector = findMinimumTranslationVector(shapeA, shapeB);
-
-  if (minTranslationVector) {
-    const moveVectorMagnitude = Math.sqrt(moveVector.x * moveVector.x + moveVector.y * moveVector.y);
-    const unitMoveVector = {
-      x: moveVector.x / moveVectorMagnitude,
-      y: moveVector.y / moveVectorMagnitude,
-    };
-
-    // Project the minimum translation vector onto the move vector
-    const projection = minTranslationVector.x * unitMoveVector.x + minTranslationVector.y * unitMoveVector.y;
-
-    return {
-      x: unitMoveVector.x * projection,
-      y: unitMoveVector.y * projection,
-    };
-  }
-
-  return minTranslationVector;
-}
-
-function findMinimumTranslationVector(shapeA: IShape, shapeB: IShape) {
-  const axes = findSeparatingAxes(shapeA, shapeB);
-  let minOverlap = Number.POSITIVE_INFINITY;
-  let minTranslationVector = null;
-
-  for (const axis of axes) {
-    const projectionA = projectShapeOntoAxis(shapeA, axis);
-    const projectionB = projectShapeOntoAxis(shapeB, axis);
-
-    const overlap = findOverlap(projectionA, projectionB);
-    if (overlap === 0) {
-      return null;
-    }
-
-    if (overlap < minOverlap) {
-      minOverlap = overlap;
-      minTranslationVector = {
-        x: axis.x * overlap,
-        y: axis.y * overlap,
-      };
-
-      // Ensure the vector points away from shape B
-      const centerA = getShapeCenter(shapeA);
-      const centerB = getShapeCenter(shapeB);
-      const separation = {
-        x: centerA.x - centerB.x,
-        y: centerA.y - centerB.y,
-      };
-
-      const dotProduct = minTranslationVector.x * separation.x + minTranslationVector.y * separation.y;
-      if (dotProduct < 0) {
-        minTranslationVector.x = -minTranslationVector.x;
-        minTranslationVector.y = -minTranslationVector.y;
-      }
-    }
-  }
-
-  return minTranslationVector;
-}
-
-function findSeparatingAxes(shapeA: IShape, shapeB: IShape) {
-  const edges = [...shapeToEdgess(shapeA), ...shapeToEdgess(shapeB)];
-  const axes = [];
-
-  for (const edge of edges) {
-    const normal = {
-      x: edge[1].y - edge[0].y,
-      y: -(edge[1].x - edge[0].x),
-    };
-
-    const magnitude = Math.sqrt(normal.x * normal.x + normal.y * normal.y);
-    const unitNormal = {
-      x: magnitude === 0 ? 1 : normal.x / magnitude,
-      y: magnitude === 0 ? 1 : normal.y / magnitude,
-    };
-
-    axes.push(unitNormal);
-  }
-
-  return axes;
-}
-
-function projectShapeOntoAxis(shape: IShape, axis: { x: number; y: number }) {
-  let min = axis.x * shape.vertices[0].x + axis.y * shape.vertices[0].y;
-  let max = min;
-
-  for (let i = 1; i < shape.vertices.length; i++) {
-    const projection = axis.x * shape.vertices[i].x + axis.y * shape.vertices[i].y;
-    min = Math.min(min, projection);
-    max = Math.max(max, projection);
-  }
-
-  return { min, max };
-}
-
-function findOverlap(projectionA: { min: number; max: number }, projectionB: { min: number; max: number }) {
-  const overlapA = projectionA.max - projectionB.min;
-  const overlapB = projectionB.max - projectionA.min;
-
-  if (overlapA > 0 && overlapB > 0) {
-    return Math.min(overlapA, overlapB);
-  }
-
-  return 0;
-}
-
-function getShapeCenter(shape: IShape) {
-  let centerX = 0;
-  let centerY = 0;
-
-  for (const vertex of shape.vertices) {
-    centerX += vertex.x;
-    centerY += vertex.y;
-  }
-
-  centerX /= shape.vertices.length;
-  centerY /= shape.vertices.length;
-
-  return { x: centerX, y: centerY };
-}
-
-function shapeToEdgess(shape: IShape) {
-  const edges = [];
-  for (let i = 0; i < shape.vertices.length; i++) {
-    const p1 = shape.vertices[i];
-    const p2 = i === shape.vertices.length - 1 ? shape.vertices[0] : shape.vertices[i + 1];
-    edges.push([p1, p2]);
-  }
-  return edges;
+function isRoughlyEqual(a: IPoint, b: IPoint, epsilon = 0.000001): boolean {
+  return Math.abs(b.x - a.x) <= epsilon && Math.abs(b.y - a.y) <= epsilon;
 }

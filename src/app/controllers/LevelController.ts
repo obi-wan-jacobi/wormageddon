@@ -20,12 +20,20 @@ export default class LevelController implements IController {
       //     { x: 600, y: 50 },
       //   ],
       // });
+      // .$add(ShapeComponent, {
+      //   vertices: [
+      //     { x: -600, y: 50 },
+      //     { x: -600, y: -50 },
+      //     { x: 600, y: -50 },
+      //     { x: 600, y: 50 },
+      //   ],
+      // });
       .$add(ShapeComponent, {
         vertices: [
-          { x: -600, y: 50 },
-          { x: -600, y: -50 },
-          { x: 600, y: -50 },
-          { x: 600, y: 50 },
+          { x: -10, y: -10 },
+          { x: 10, y: -10 },
+          { x: 10, y: 10 },
+          { x: -10, y: 10 },
         ],
       });
 

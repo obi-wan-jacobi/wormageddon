@@ -26,7 +26,7 @@ export const app = new App({
   controllers: {
     input: new InputController({ canvas }),
     worm: new WormController(),
-    // level: new LevelController(),
+    level: new LevelController(),
     handle: new HandleController(),
   },
   systems: [
