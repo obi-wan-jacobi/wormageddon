@@ -4,6 +4,7 @@ import {
   IPose,
   IShape,
   Vector,
+  booleanContains,
   booleanPointInPolygon,
   fromGeoJSONCoordinatesToShapes,
   fromPointsToGeoJSON,
@@ -13,7 +14,7 @@ import {
   lineIntersect,
   transformShape,
 } from '@plasmastrapi/geometry';
-import { IVelocity, LevelComponent } from '@plasmastrapi/physics';
+import { IVelocity, LevelComponent, VelocityComponent } from '@plasmastrapi/physics';
 import { IStyle, IViewport } from '@plasmastrapi/viewport';
 import Worm from 'app/entities/Worm';
 import { COLOUR } from '@plasmastrapi/engine';
@@ -42,46 +43,102 @@ export default class WormCollisionSystem extends System {
     delta: number;
     viewport: IViewport<any>;
   }): void {
-    entities.forEvery(Handle)((handle) => {
-      // const { x, y, a, $ } = worm.$copy(PoseComponent);
-      // const prevPose = $!.previous;
-      // const nextPose = { x, y, a };
-      // const extrusion = extrude(worm.$copy(ShapeComponent), prevPose, nextPose);
-      // const extrusion = extrude(worm.$copy(ShapeComponent), prevPose, nextPose);
-      const prevPose = { x: 400, y: 200, a: 0 };
-      const nextPose = handle.$copy(PoseComponent);
-      // const nextPose = { x: 380, y: 190, a: 0 };
-      // const nextPose = { x: 48, y: 400, a: 0 };
-      // const nextPose = { x: 600, y: 400, a: 0 };
-      // const nextPose = { x: 550, y: 338, a: 0 };
-      const testShape = {
-        vertices: [
-          { x: -50, y: -50 },
-          { x: 50, y: -50 },
-          { x: 50, y: 50 },
-          { x: 25, y: 100 },
-          { x: 10, y: -10 },
-          { x: -50, y: 50 },
-        ],
-      };
-      const extrusion = extrude(testShape, prevPose, nextPose, viewport);
-      for (let i = 0, L = extrusion.vertices.length; i < L - 1; i++) {
-        highlightEdge(viewport, [extrusion.vertices[i], extrusion.vertices[i + 1]], STYLE_RED);
-      }
+    entities.forEvery(Worm)((worm) => {
+      const { x, y, a, $ } = worm.$copy(PoseComponent);
+      const prevPose = $!.previous;
+      const nextPose = { x, y, a };
+      const baseWormShape = worm.$copy(ShapeComponent);
+      const extrusion = extrude(baseWormShape, prevPose, nextPose, viewport);
+      const prevShape = transformShape(baseWormShape, prevPose);
+      const nextShape = transformShape(baseWormShape, nextPose);
+      const extrusionEdges = shapeToEdges(extrusion);
+      const gbox = GBOX.create(extrusion);
+      const distance = getEuclideanDistanceBetweenPoints(gbox.v1, gbox.v3);
+      const u = Vector.normalizeFromPoints(prevPose, nextPose);
       components.forEvery(LevelComponent)((levelComponent) => {
         const level = levelComponent.$entity;
-        const levelShape = fromShapeToGeoJSON(transformShape(level.$copy(ShapeComponent), level.$copy(PoseComponent)));
-        const intersection = intersect(fromShapeToGeoJSON(extrusion), levelShape);
-        if (intersection) {
-          const overlap = fromGeoJSONCoordinatesToShapes(intersection)[0];
-          viewport.drawShape({ path: overlap.vertices, style: STYLE_RED });
+        const levelShape = transformShape(level.$copy(ShapeComponent), level.$copy(PoseComponent));
+        const levelEdges = shapeToEdges(levelShape);
+        const levelGeos = fromShapeToGeoJSON(levelShape);
+        if (booleanContains(fromShapeToGeoJSON(extrusion), levelGeos)) {
+          viewport.drawShape({ path: levelShape.vertices, style: STYLE_RED });
+          let longestIntersection: IIntersection = { index: -1, point: { x: 0, y: 0 }, distance: Number.NEGATIVE_INFINITY };
+          for (const vertex of levelShape.vertices) {
+            const startpoint = vertex;
+            const endpoint = { x: vertex.x + u.direction.x * distance, y: vertex.y + u.direction.y * distance };
+            highlightEdge(viewport, [vertex, endpoint], STYLE_ORANGE);
+            const intersections = findAllIntersections(startpoint, endpoint, extrusionEdges, {
+              isIncludeStart: true,
+              isIncludeEnd: true,
+            });
+            while (intersections.length) {
+              const intersection = intersections.pop()!;
+              if (longestIntersection.distance < intersection.distance) {
+                longestIntersection = intersection;
+              }
+              highlightPoint(viewport, intersection.point, STYLE_RED);
+            }
+          }
+          highlightPoint(viewport, longestIntersection.point, STYLE_RED_BIG);
+          const resolvedPose = {
+            x: nextPose.x - u.direction.x * longestIntersection.distance,
+            y: nextPose.y - u.direction.y * longestIntersection.distance,
+          };
+          highlightEdge(viewport, [nextPose, resolvedPose], STYLE_GREEN);
+          worm.$patch(PoseComponent, resolvedPose);
+        } else {
+          const intersection = intersect(fromShapeToGeoJSON(extrusion), levelGeos);
+          if (intersection) {
+            const overlap = fromGeoJSONCoordinatesToShapes(intersection)[0];
+            viewport.drawShape({ path: overlap.vertices, style: STYLE_ORANGE });
+            let longestIntersection: IIntersection = { index: -1, point: { x: 0, y: 0 }, distance: Number.NEGATIVE_INFINITY };
+            for (let i = 0, L = nextShape.vertices.length; i < L; i++) {
+              const startpoint = nextShape.vertices[i];
+              const endpoint = prevShape.vertices[i];
+              highlightEdge(viewport, [nextShape.vertices[i], prevShape.vertices[i]], STYLE_YELLOW);
+              const intersections = findAllIntersections(startpoint, endpoint, levelEdges, {
+                isIncludeStart: true,
+                isIncludeEnd: true,
+              });
+              while (intersections.length) {
+                const intersection = intersections.pop()!;
+                if (longestIntersection.distance < intersection.distance) {
+                  longestIntersection = intersection;
+                }
+                highlightPoint(viewport, intersection.point, STYLE_RED);
+              }
+            }
+            for (const vertex of levelShape.vertices) {
+              const startpoint = vertex;
+              const endpoint = { x: vertex.x + u.direction.x * distance, y: vertex.y + u.direction.y * distance };
+              highlightEdge(viewport, [vertex, endpoint], STYLE_ORANGE);
+              const intersections = findAllIntersections(startpoint, endpoint, extrusionEdges, {
+                isIncludeStart: true,
+                isIncludeEnd: true,
+              });
+              while (intersections.length) {
+                const intersection = intersections.pop()!;
+                if (longestIntersection.distance < intersection.distance) {
+                  longestIntersection = intersection;
+                }
+                highlightPoint(viewport, intersection.point, STYLE_RED);
+              }
+            }
+            const resolvedPose = {
+              x: nextPose.x - u.direction.x * longestIntersection.distance,
+              y: nextPose.y - u.direction.y * longestIntersection.distance,
+            };
+            worm.$patch(PoseComponent, clone(resolvedPose));
+            worm.$patch(VelocityComponent, { x: 0, y: 0 });
+            highlightEdge(viewport, [nextPose, resolvedPose], STYLE_GREEN);
+          }
         }
       });
     });
   }
 }
 
-function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any>): IShape {
+export function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any>): IShape {
   if (to.x === from.x) {
     to.x += 0.5;
   }
@@ -145,9 +202,9 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any
       }
     }
   }
-  // for (const edge of newEdges) {
-  //   highlightEdge(viewport, edge, STYLE_YELLOW);
-  // }
+  for (const edge of newEdges) {
+    highlightEdge(viewport, edge, STYLE_YELLOW);
+  }
   for (const edge of edgesA) {
     highlightEdge(viewport, edge, STYLE_GREEN);
   }
@@ -252,9 +309,9 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any
     }
     // i++;
   }
-  for (const edge of extrusionEdges) {
-    highlightEdge(viewport, edge, STYLE_WHITE);
-  }
+  // for (const edge of extrusionEdges) {
+  //   highlightEdge(viewport, edge, STYLE_WHITE);
+  // }
   // for (const edge of edgesA) {
   //   highlightEdge(viewport, edge, STYLE_GREEN);
   // }
@@ -308,7 +365,7 @@ interface IGBOX {
 abstract class GBOX {
   private constructor() {}
 
-  public static create(shape: IShape, epsilon = 0): IGBOX {
+  public static create(shape: IShape, epsilon = 0.000001): IGBOX {
     const vertices = shape.vertices;
     let minX = Number.POSITIVE_INFINITY;
     let minY = Number.POSITIVE_INFINITY;

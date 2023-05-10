@@ -15,6 +15,7 @@ import WormReticleSystem from './systems/WormReticleSystem';
 import WormCollisionSystem from './systems/WormCollisionSystem';
 import HandleController from './controllers/HandleController';
 import HandleInputHandler from './input-handlers/HandleInputHandler';
+import HandleSystem from './systems/HandleSystem';
 
 const canvas = document.getElementById('app-target') as HTMLCanvasElement;
 canvas.width = 1280;
@@ -42,12 +43,13 @@ export const app = new App({
     AccelerationSystem,
     VelocitySystem,
 
+    // WormVelocitySystem,
     WormCollisionSystem,
-    WormVelocitySystem,
     WormHeadingSystem,
     WormStateSystem,
     WormWalkingSystem,
     WormReticleSystem,
+    HandleSystem,
   ],
 });
 
@@ -93,5 +95,5 @@ app.load('./assets/slide/wslideRU.png');
 app.load('./assets/crshairr.png');
 
 app.init();
-app.controllers.input.setHandler(HandleInputHandler);
+app.controllers.input.setHandler(WormInputHandler);
 app.start();

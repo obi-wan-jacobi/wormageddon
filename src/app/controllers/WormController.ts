@@ -9,7 +9,7 @@ export default class WormController implements IController {
   private __worm: HTML5CanvasElement;
 
   public init(): void {
-    // this.__worm = new Worm({ x: 100, y: 100 });
+    this.__worm = new Worm({ x: 100, y: 100 });
   }
 
   @SaveStoredState([WORM_FACING.LEFT, WORM_ACTION.WALK])

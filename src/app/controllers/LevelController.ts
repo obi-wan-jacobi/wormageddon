@@ -30,12 +30,23 @@ export default class LevelController implements IController {
       // });
       .$add(ShapeComponent, {
         vertices: [
-          { x: -10, y: -10 },
-          { x: 10, y: -10 },
-          { x: 10, y: 10 },
-          { x: -10, y: 10 },
+          { x: -600, y: -50 },
+          { x: -300, y: -50 },
+          { x: -290, y: -150 },
+          { x: -280, y: -50 },
+          { x: 600, y: -50 },
+          { x: 600, y: 50 },
+          { x: -600, y: 50 },
         ],
       });
+    // .$add(ShapeComponent, {
+    //   vertices: [
+    //     { x: -10, y: -10 },
+    //     { x: 10, y: -10 },
+    //     { x: 10, y: 10 },
+    //     { x: -10, y: 10 },
+    //   ],
+    // });
 
     // new HTML5CanvasElement()
     //   .$add(LevelComponent, {})

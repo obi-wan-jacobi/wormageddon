@@ -76,7 +76,7 @@ export default class WormVelocitySystem extends System {
       nextPose.y -= CONSTANTS.EPSILON;
       [vNext.x, vNext.y] = [clamp(vNext.x, 0, 0.05), clamp(vNext.y, 0, 0.05)];
       worm.$patch(VelocityComponent, { x: vNext.x, y: vNext.y });
-      worm.$patch(PoseComponent, nextPose);
+      // worm.$patch(PoseComponent, nextPose);
       // diagnostics(viewport, nextPose, { x: vNext.x, y: vNext.y, w: 0 });
     });
   }

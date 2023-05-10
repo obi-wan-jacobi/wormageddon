@@ -33,6 +33,17 @@ const testShape = {
   ],
 };
 
+const unevenTeethDownward = {
+  vertices: [
+    { x: -50, y: -50 },
+    { x: 50, y: -50 },
+    { x: 50, y: 50 },
+    { x: 25, y: 100 },
+    { x: 10, y: -10 },
+    { x: -50, y: 50 },
+  ],
+};
+
 // const prevPose = { x: 1280 / 2, y: 720 / 2, a: 0 };
 // const nextPose = { x: 640, y: 379, a: 0 };
 // const nextPose = { x: 250.39999389648438, y: 126.89599609375, a: 0 };
