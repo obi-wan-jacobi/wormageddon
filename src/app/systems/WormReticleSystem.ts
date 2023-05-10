@@ -22,11 +22,6 @@ export default class WormReticleSystem extends RenderingSystem {
       const y = p.y + offset.y + distance * Math.sin(angle);
       const image = images[0];
       viewport.drawImage({ pose: { x, y, a: 0 }, image });
-      viewport.drawCircle({
-        position: { x, y },
-        radius: 2,
-        style: { colour: 'lightgreen', fill: 'lightgreen', opacity: 1, zIndex: 9999 },
-      });
     });
   }
 }

@@ -1,12 +1,14 @@
-import { IComponentMaster, IEntityMaster, PoseComponent, System } from '@plasmastrapi/ecs';
+import { IComponentMaster, IEntityMaster, PoseComponent, ShapeComponent, System } from '@plasmastrapi/ecs';
 import {
   IPoint,
   IPose,
   IShape,
   booleanPointInPolygon,
+  fromGeoJSONCoordinatesToShapes,
   fromPointsToGeoJSON,
   fromShapeToGeoJSON,
   getEuclideanDistanceBetweenPoints,
+  intersect,
   lineIntersect,
   transformShape,
 } from '@plasmastrapi/geometry';
@@ -14,9 +16,9 @@ import { IVelocity, LevelComponent } from '@plasmastrapi/physics';
 import { IStyle, IViewport } from '@plasmastrapi/viewport';
 import Worm from 'app/entities/Worm';
 import { COLOUR } from '@plasmastrapi/engine';
-import Handle from 'app/entities/Handle';
 import { CONSTANTS } from 'app/CONSTANTS';
 import { clone, isShallowEqual } from '@plasmastrapi/base';
+import Handle from 'app/entities/Handle';
 
 const STYLE_GREEN = { colour: 'lightgreen', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
 const STYLE_GREEN_BIG = { colour: 'lightgreen', fill: 'lightgreen', opacity: 1, zIndex: 9999 };
@@ -43,23 +45,14 @@ export default class WormCollisionSystem extends System {
       // const { x, y, a, $ } = worm.$copy(PoseComponent);
       // const prevPose = $!.previous;
       // const nextPose = { x, y, a };
-      const prevPose = { x: 1280 / 2, y: 720 / 2, a: 0 };
+      // const extrusion = extrude(worm.$copy(ShapeComponent), prevPose, nextPose);
+      // const extrusion = extrude(worm.$copy(ShapeComponent), prevPose, nextPose);
+      const prevPose = { x: 400, y: 200, a: 0 };
       const nextPose = handle.$copy(PoseComponent);
-      // const nextPose = { x: 640, y: 379, a: 0 };
-      // const nextPose = { x: 250.39999389648438, y: 126.89599609375, a: 0 };
-      // const nextPose = { x: 300, y: 450, a: 0 };
-      // const nextPose = { x: 640, y: 200, a: 0 };
-      // const nextPose = { x: 250, y: 400, a: 0 };
-      // const nextPose = { x: 300, y: 500, a: 0 };
-      // const nextPose = { x: 700, y: 200, a: 0 };
-      // const nextPose = { x: 645, y: 365, a: 0 };
-      // const nextPose = { x: 665, y: 380, a: 0 };
-      // const nextPose = { x: 690, y: 500, a: 0 };
-      viewport.drawLabel({
-        pose: { x: 50, y: 50, a: 0 },
-        style: STYLE_RED,
-        label: { text: `${nextPose.x}, ${nextPose.y}`, fontSize: 10, offset: { x: 0, y: 0 } },
-      });
+      // const nextPose = { x: 380, y: 190, a: 0 };
+      // const nextPose = { x: 48, y: 400, a: 0 };
+      // const nextPose = { x: 600, y: 400, a: 0 };
+      // const nextPose = { x: 300, y: 400, a: 0 };
       const testShape = {
         vertices: [
           { x: 0, y: -5 },
@@ -94,28 +87,23 @@ export default class WormCollisionSystem extends System {
           { x: -10, y: -5 },
         ],
       };
-      // viewport.drawShape({ path: transformShape(testShape, prevPose).vertices, style: STYLE_GREEN });
-      // viewport.drawShape({ path: transformShape(testShape, nextPose).vertices, style: STYLE_BLUE });
-      const hull = extrude(testShape, prevPose, nextPose, viewport);
-      // const hull = convexHull(transformShape(testShape, prevPose), transformShape(testShape, nextPose));
-      // viewport.drawLine({ path: hull.vertices, style: STYLE_YELLOW });
-      // viewport.drawLine({ path: [prevPose, nextPose], style: STYLE_GREEN });
+      const extrusion = extrude(testShape, prevPose, nextPose, viewport);
       components.forEvery(LevelComponent)((levelComponent) => {
         // const level = levelComponent.$entity;
         // const levelShape = fromShapeToGeoJSON(transformShape(level.$copy(ShapeComponent), level.$copy(PoseComponent)));
-        // const intersection = intersect(fromShapeToGeoJSON(hull), levelShape);
+        // const intersection = intersect(fromShapeToGeoJSON(extrusion), levelShape);
         // if (intersection) {
         //   const overlap = fromGeoJSONCoordinatesToShapes(intersection)[0];
-        //   // viewport.drawShape({ path: overlap.vertices, style: STYLE_GREEN });
-        //   Math.min(
-        //     ...overlap.vertices.map((vertex) => {
-        //       // viewport.drawCircle({
-        //       //   position: closestPointOnLine(prevPose, nextPose, vertex),
-        //       //   radius: 2,
-        //       //   style: STYLE_GREEN,
-        //       // });
-        //       return getEuclideanDistanceBetweenPoints(closestPointOnLine(prevPose, nextPose, vertex), prevPose);
-        //     }),
+        //   viewport.drawShape({ path: overlap.vertices, style: STYLE_GREEN });
+        //   const minTranslationVector = separateShapes(
+        //     extrusion,
+        //     transformShape(level.$copy(ShapeComponent), level.$copy(PoseComponent)),
+        //     { x: -1, y: -1 },
+        //   )!;
+        //   highlightEdge(
+        //     viewport,
+        //     [nextPose, { x: nextPose.x + minTranslationVector?.x, y: nextPose.y + minTranslationVector?.y }],
+        //     STYLE_RED,
         //   );
         // }
       });
@@ -123,18 +111,18 @@ export default class WormCollisionSystem extends System {
   }
 }
 
-function extrude(shape: IShape, from: IPose, to: IPose, viewport: IViewport<any>): IShape {
+function extrude(shape: IShape, from: IPose, to: IPose, viewport?: IViewport<any>): IShape {
   if (to.x === from.x) {
-    to.x += CONSTANTS.EPSILON;
+    to.x += 0.5;
   }
   if (to.y === from.y) {
-    to.y += CONSTANTS.EPSILON;
+    to.y += 0.5;
   }
-  let shapeA = transformShape(shape, from);
-  let shapeB = transformShape(shape, to);
   if (to.y < from.y) {
-    [shapeA, shapeB] = [shapeB, shapeA];
+    [from, to] = [to, from];
   }
+  const shapeA = transformShape(shape, from);
+  const shapeB = transformShape(shape, to);
   const gbox = GBOX.combine(GBOX.create(shapeA), GBOX.create(shapeB));
   let a = shapeA.vertices;
   let b = shapeB.vertices;
@@ -158,13 +146,16 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport: IViewport<any>
   const geosB = fromShapeToGeoJSON(shapeB);
   let startingEdge: Edge | undefined;
   for (let i = 0, L = a.length; i < L; i++) {
-    const intersectionA = findIntersection(a[i], b[i], edgesA);
-    const intersectionB = findIntersection(b[i], a[i], edgesB);
+    const intersectionA = findIntersection(a[i], b[i], edgesA, { isIncludeEnd: true });
+    const intersectionB = findIntersection(b[i], a[i], edgesB, { isIncludeEnd: true });
+    if (intersectionA && intersectionB) {
+      console.log('hello');
+    }
     if (intersectionA && !intersectionB) {
       const midPoint = [(a[i].x + intersectionA.point.x) / 2, (a[i].y + intersectionA.point.y) / 2];
       if (
         !booleanPointInPolygon(midPoint, geosA) &&
-        !booleanPointInPolygon([intersectionA.point.x, intersectionA.point.y], geosB)
+        !booleanPointInPolygon([intersectionA.point.x, intersectionA.point.y], geosB, { ignoreBoundary: true })
       ) {
         newEdges.push([a[i], intersectionA.point]);
       }
@@ -173,7 +164,7 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport: IViewport<any>
       const midPoint = [(b[i].x + intersectionB.point.x) / 2, (b[i].y + intersectionB.point.y) / 2];
       if (
         !booleanPointInPolygon(midPoint, geosB) &&
-        !booleanPointInPolygon([intersectionB.point.x, intersectionB.point.y], geosA)
+        !booleanPointInPolygon([intersectionB.point.x, intersectionB.point.y], geosA, { ignoreBoundary: true })
       ) {
         newEdges.push([b[i], intersectionB.point]);
       }
@@ -190,6 +181,12 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport: IViewport<any>
   for (const edge of newEdges) {
     highlightEdge(viewport, edge, STYLE_YELLOW);
   }
+  for (const edge of edgesA) {
+    highlightEdge(viewport, edge, STYLE_GREEN);
+  }
+  for (const edge of edgesB) {
+    highlightEdge(viewport, edge, STYLE_BLUE);
+  }
   const newEdgesA: Edge[] = [];
   for (let i = 0; i < edgesA.length; i++) {
     const edge = clone(edgesA[i]);
@@ -202,10 +199,6 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport: IViewport<any>
       newEdgesA[newEdgesA.length - 2][1] = intersectionB.point;
     }
   }
-  // const llast = 99;
-  // for (let i = 0, L = newEdgesA.length; i < L && i <= llast; i++) {
-  //   highlightEdge(viewport, newEdgesA[i], STYLE_WHITE);
-  // }
   const newEdgesB: Edge[] = [];
   for (let i = 0; i < edgesB.length; i++) {
     const edge = clone(edgesB[i]);
@@ -220,63 +213,43 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport: IViewport<any>
       }
     }
   }
-  // const lllast = 30;
-  // for (let i = 0, L = newEdgesB.length; i < L && i <= lllast; i++) {
-  //   highlightEdge(viewport, newEdgesB[i], STYLE_WHITE);
-  // }
   for (let i = 0; i < newEdgesA.length; i++) {
     const edge = newEdgesA[i];
-    const intersectionE = findIntersection(edge[0], edge[1], newEdges);
+    const intersectionE = findIntersection(edge[0], edge[1], newEdges, { isIncludeEnd: true });
     if (intersectionE) {
-      newEdgesA.splice(i + 1, 0, [intersectionE.point, clone(edge[1])]);
-      edge[1] = intersectionE.point;
-      i++;
+      if (!isShallowEqual(intersectionE.point, clone(edge[1]))) {
+        newEdgesA.splice(i + 1, 0, [intersectionE.point, clone(edge[1])]);
+        edge[1] = intersectionE.point;
+        i++;
+      }
     }
   }
   for (let i = 0; i < newEdgesB.length; i++) {
     const edge = newEdgesB[i];
-    const intersectionE = findIntersection(edge[0], edge[1], newEdges);
+    const intersectionE = findIntersection(edge[0], edge[1], newEdges, { isIncludeEnd: true });
     if (intersectionE) {
-      newEdgesB.splice(i + 1, 0, [intersectionE.point, clone(edge[1])]);
-      edge[1] = intersectionE.point;
-      i++;
+      if (!isShallowEqual(intersectionE.point, clone(edge[1]))) {
+        newEdgesB.splice(i + 1, 0, [intersectionE.point, clone(edge[1])]);
+        edge[1] = intersectionE.point;
+        i++;
+      }
     }
   }
   edgesA = newEdgesA;
   edgesB = newEdgesB;
-  // const lllast = 7;
-  // for (let i = 0, L = newEdgesA.length; i < L && i <= lllast; i++) {
-  //   highlightEdge(viewport, newEdgesA[i], STYLE_WHITE);
-  // }
-  // for (const edge of edgesA) {
-  //   highlightPoint(viewport, edge[1], STYLE_GREEN);
-  // }
-  for (const edge of edgesB) {
-    highlightPoint(viewport, edge[1], STYLE_BLUE);
-  }
   idx = newEdges.findIndex((edge) => isShallowEqual(edge, startingEdge!));
-  // highlightEdge(viewport, newEdges[idx], STYLE_RED);
   newEdges = rotateArray(newEdges, idx);
   idx = findNextEdge(newEdges[0][0], edgesA);
   edgesA = rotateArray(edgesA, idx);
-  // highlightEdge(viewport, edgesA[idx], STYLE_RED);
-  // edgesA.push(edgesA[0]);
   idx = findNextEdge(newEdges[0][1], edgesB);
-  // highlightEdge(viewport, edgesB[idx], STYLE_RED);
   edgesB = rotateArray(edgesB, idx);
-  // highlightEdge(viewport, edgesB[idx], STYLE_RED);
-  // edgesB.push(edgesB[0]);
   const extrusionEdges: Edge[] = [];
-  const vertices: IPoint[] = [];
   let i = 0;
-  const last = 99;
+  const last = Number.POSITIVE_INFINITY;
   while (edgesA.length && edgesB.length && newEdges.length && i <= last) {
-    if (i === last) {
-      console.log('hi');
-    }
     const edge = edgesA.shift()!;
     extrusionEdges.push(edge);
-    const idxE = findNewEdge(edge[1], newEdges);
+    const idxE = findEdgeWithVertex(edge[1], newEdges);
     if (idxE > -1) {
       if (newEdges[idxE][2] === EDGE_TYPE.OUTER) {
         [edgesA, edgesB] = [edgesB, edgesA];
@@ -285,7 +258,6 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport: IViewport<any>
       //   edge[1].x === newEdges[idxE][0].x && edge[1].y === newEdges[idxE][0].y ? newEdges[idxE][0] : newEdges[idxE][1];
       const vertex1 =
         edge[1].x === newEdges[idxE][0].x && edge[1].y === newEdges[idxE][0].y ? newEdges[idxE][1] : newEdges[idxE][0];
-      highlightPoint(viewport, vertex1, STYLE_RED);
       const idxA = findNextEdge(vertex1, edgesA);
       extrusionEdges.push(newEdges.splice(idxE, 1)[0]);
       let counter = idxA || 0;
@@ -307,36 +279,23 @@ function extrude(shape: IShape, from: IPose, to: IPose, viewport: IViewport<any>
     }
     i++;
   }
-  // while (edgesA.length) {
-  //   extrusionEdges.push(edgesA.shift()!);
-  // }
   for (const edge of extrusionEdges) {
     highlightEdge(viewport, edge, STYLE_WHITE);
   }
-  for (const edge of edgesA) {
-    highlightEdge(viewport, edge, STYLE_GREEN);
-  }
-  for (const edge of edgesB) {
-    highlightEdge(viewport, edge, STYLE_BLUE);
-  }
-  // const llast = 18;
-  // for (let i = 0, L = edgesB.length; i < L && i <= llast; i++) {
-  //   highlightEdge(viewport, edgesB[i], STYLE_BLUE);
+  // for (const edge of edgesA) {
+  //   highlightEdge(viewport, edge, STYLE_GREEN);
   // }
-  return { vertices };
-}
-
-function isVertexInEdge(vertex: IPoint, edge: Edge): boolean {
-  return (vertex.x === edge[0].x && vertex.y === edge[0].y) || (vertex.x === edge[1].x && vertex.y === edge[1].y);
-}
-
-function shapeToEdges(shape: IShape): Edge[] {
-  const L = shape.vertices.length;
-  return shape.vertices.map((v: IPoint, i: number) => [v, shape.vertices[(i + 1) % L]]);
-}
-
-function edgeToPath(edge: Edge): IPoint[] {
-  return [edge[0], edge[1]];
+  // for (const edge of edgesB) {
+  //   highlightEdge(viewport, edge, STYLE_BLUE);
+  // }
+  return {
+    vertices: extrusionEdges
+      .map((edge) => edge[0])
+      .filter((value, index, array) => {
+        return array.indexOf(value) === index;
+      })
+      .slice(0, extrusionEdges.length - 2),
+  };
 }
 
 function orientation(p: IPoint, q: IPoint, r: IPoint): number {
@@ -348,11 +307,19 @@ function orientation(p: IPoint, q: IPoint, r: IPoint): number {
   return val > 0 ? -1 : 1;
 }
 
+function shapeToEdges(shape: IShape): Edge[] {
+  const L = shape.vertices.length;
+  return shape.vertices.map((v: IPoint, i: number) => [v, shape.vertices[(i + 1) % L]]);
+}
+
+function edgeToPath(edge: Edge): IPoint[] {
+  return [edge[0], edge[1]];
+}
+
 type Edge = [IPoint, IPoint, EDGE_TYPE?];
 
 enum EDGE_TYPE {
   OUTER,
-  NEW,
 }
 
 interface IGBOX {
@@ -428,26 +395,57 @@ interface IIntersection {
 }
 
 interface IFindIntersectionOptions {
-  isIncludeStart: boolean;
-  isIncludeEnd: boolean;
+  epsilon?: number;
+  isIncludeStart?: boolean;
+  isIncludeEnd?: boolean;
 }
 
 function findIntersection(
   start: IPoint,
   end: IPoint,
   edges: Edge[],
-  options?: IFindIntersectionOptions,
+  options: IFindIntersectionOptions = { epsilon: 0.000001, isIncludeStart: false, isIncludeEnd: false },
 ): IIntersection | undefined {
-  options = options || { isIncludeStart: false, isIncludeEnd: false };
   const intersections = findAllIntersections(start, end, edges, options);
   return intersections.length ? intersections[0] : undefined;
 }
 
-function findAllIntersections(start: IPoint, end: IPoint, edges: Edge[], options?: IFindIntersectionOptions): IIntersection[] {
-  options = options || { isIncludeStart: false, isIncludeEnd: false };
-  const intersections: [IPoint, number][] = edges
+function findAllIntersections(
+  start: IPoint,
+  end: IPoint,
+  edges: Edge[],
+  options: IFindIntersectionOptions = { epsilon: 0.000001, isIncludeStart: false, isIncludeEnd: false },
+): IIntersection[] {
+  options = Object.assign({ epsilon: 0.000001, isIncludeStart: false, isIncludeEnd: false }, options);
+  return edges
     .map((edge, idx) => {
-      return [lineIntersect(fromPointsToGeoJSON([start, end]), fromPointsToGeoJSON([edge[0], edge[1]])), idx];
+      const from = edge[0];
+      const to = edge[1];
+      if (Math.abs(start.x - edge[0].x) <= options.epsilon!) {
+        from.x = start.x;
+      }
+      if (Math.abs(start.y - edge[0].y) <= options.epsilon!) {
+        from.y = start.y;
+      }
+      if (Math.abs(end.x - edge[0].x) <= options.epsilon!) {
+        from.x = end.x;
+      }
+      if (Math.abs(end.y - edge[0].y) <= options.epsilon!) {
+        from.y = end.y;
+      }
+      if (Math.abs(start.x - edge[1].x) <= options.epsilon!) {
+        to.x = start.x;
+      }
+      if (Math.abs(start.y - edge[1].y) <= options.epsilon!) {
+        to.y = start.y;
+      }
+      if (Math.abs(end.x - edge[1].x) <= options.epsilon!) {
+        to.x = end.x;
+      }
+      if (Math.abs(end.y - edge[1].y) <= options.epsilon!) {
+        to.y = end.y;
+      }
+      return [lineIntersect(fromPointsToGeoJSON([start, end]), fromPointsToGeoJSON([from, to])), idx];
     })
     .filter(([intersection]) => {
       let isValidIntersection = intersection.features.length > 0;
@@ -465,22 +463,25 @@ function findAllIntersections(start: IPoint, end: IPoint, edges: Edge[], options
     .map(([intersection, idx]) => {
       const [x, y] = intersection.features[0].geometry.coordinates;
       return [{ x, y }, idx];
-    });
-  intersections.sort(([{ x: x1, y: y1 }], [{ x: x2, y: y2 }]) => {
-    return (
-      getEuclideanDistanceBetweenPoints(start, { x: x1, y: y1 }) - getEuclideanDistanceBetweenPoints(start, { x: x2, y: y2 })
-    );
-  });
-  return intersections.map(([intersection, idx]) => ({
-    point: intersection,
-    index: idx,
-    distance: getEuclideanDistanceBetweenPoints(start, intersection),
-  }));
+    })
+    .sort(([{ x: x1, y: y1 }], [{ x: x2, y: y2 }]) => {
+      return (
+        getEuclideanDistanceBetweenPoints(start, { x: x1, y: y1 }) - getEuclideanDistanceBetweenPoints(start, { x: x2, y: y2 })
+      );
+    })
+    .map(([intersection, idx]) => ({
+      point: intersection,
+      index: idx,
+      distance: getEuclideanDistanceBetweenPoints(start, intersection),
+    }));
 }
 
-function findNewEdge(point: IPoint, edges: Edge[]): number {
+function findEdgeWithVertex(vertex: IPoint, edges: Edge[], epsilon = 0.000001): number {
   return edges.findIndex((edge) => {
-    return (point.x === edge[0].x && point.y === edge[0].y) || (point.x === edge[1].x && point.y === edge[1].y);
+    return (
+      (Math.abs(vertex.x - edge[0].x) <= epsilon && Math.abs(vertex.y - edge[0].y) <= epsilon) ||
+      (Math.abs(vertex.x - edge[1].x) <= epsilon && Math.abs(vertex.y - edge[1].y) <= epsilon)
+    );
   });
 }
 
@@ -488,4 +489,137 @@ function findNextEdge(start: IPoint, edges: Edge[], epsilon = 0.000001): number 
   return edges.findIndex((edge) => {
     return Math.abs(start.x - edge[0].x) <= epsilon && Math.abs(start.y - edge[0].y) <= epsilon;
   });
+}
+
+function separateShapes(shapeA: IShape, shapeB: IShape, moveVector: { x: number; y: number }) {
+  const minTranslationVector = findMinimumTranslationVector(shapeA, shapeB);
+
+  if (minTranslationVector) {
+    const moveVectorMagnitude = Math.sqrt(moveVector.x * moveVector.x + moveVector.y * moveVector.y);
+    const unitMoveVector = {
+      x: moveVector.x / moveVectorMagnitude,
+      y: moveVector.y / moveVectorMagnitude,
+    };
+
+    // Project the minimum translation vector onto the move vector
+    const projection = minTranslationVector.x * unitMoveVector.x + minTranslationVector.y * unitMoveVector.y;
+
+    return {
+      x: unitMoveVector.x * projection,
+      y: unitMoveVector.y * projection,
+    };
+  }
+
+  return minTranslationVector;
+}
+
+function findMinimumTranslationVector(shapeA: IShape, shapeB: IShape) {
+  const axes = findSeparatingAxes(shapeA, shapeB);
+  let minOverlap = Number.POSITIVE_INFINITY;
+  let minTranslationVector = null;
+
+  for (const axis of axes) {
+    const projectionA = projectShapeOntoAxis(shapeA, axis);
+    const projectionB = projectShapeOntoAxis(shapeB, axis);
+
+    const overlap = findOverlap(projectionA, projectionB);
+    if (overlap === 0) {
+      return null;
+    }
+
+    if (overlap < minOverlap) {
+      minOverlap = overlap;
+      minTranslationVector = {
+        x: axis.x * overlap,
+        y: axis.y * overlap,
+      };
+
+      // Ensure the vector points away from shape B
+      const centerA = getShapeCenter(shapeA);
+      const centerB = getShapeCenter(shapeB);
+      const separation = {
+        x: centerA.x - centerB.x,
+        y: centerA.y - centerB.y,
+      };
+
+      const dotProduct = minTranslationVector.x * separation.x + minTranslationVector.y * separation.y;
+      if (dotProduct < 0) {
+        minTranslationVector.x = -minTranslationVector.x;
+        minTranslationVector.y = -minTranslationVector.y;
+      }
+    }
+  }
+
+  return minTranslationVector;
+}
+
+function findSeparatingAxes(shapeA: IShape, shapeB: IShape) {
+  const edges = [...shapeToEdgess(shapeA), ...shapeToEdgess(shapeB)];
+  const axes = [];
+
+  for (const edge of edges) {
+    const normal = {
+      x: edge[1].y - edge[0].y,
+      y: -(edge[1].x - edge[0].x),
+    };
+
+    const magnitude = Math.sqrt(normal.x * normal.x + normal.y * normal.y);
+    const unitNormal = {
+      x: magnitude === 0 ? 1 : normal.x / magnitude,
+      y: magnitude === 0 ? 1 : normal.y / magnitude,
+    };
+
+    axes.push(unitNormal);
+  }
+
+  return axes;
+}
+
+function projectShapeOntoAxis(shape: IShape, axis: { x: number; y: number }) {
+  let min = axis.x * shape.vertices[0].x + axis.y * shape.vertices[0].y;
+  let max = min;
+
+  for (let i = 1; i < shape.vertices.length; i++) {
+    const projection = axis.x * shape.vertices[i].x + axis.y * shape.vertices[i].y;
+    min = Math.min(min, projection);
+    max = Math.max(max, projection);
+  }
+
+  return { min, max };
+}
+
+function findOverlap(projectionA: { min: number; max: number }, projectionB: { min: number; max: number }) {
+  const overlapA = projectionA.max - projectionB.min;
+  const overlapB = projectionB.max - projectionA.min;
+
+  if (overlapA > 0 && overlapB > 0) {
+    return Math.min(overlapA, overlapB);
+  }
+
+  return 0;
+}
+
+function getShapeCenter(shape: IShape) {
+  let centerX = 0;
+  let centerY = 0;
+
+  for (const vertex of shape.vertices) {
+    centerX += vertex.x;
+    centerY += vertex.y;
+  }
+
+  centerX /= shape.vertices.length;
+  centerY /= shape.vertices.length;
+
+  return { x: centerX, y: centerY };
+}
+
+function shapeToEdgess(shape: IShape) {
+  const edges = [];
+  for (let i = 0; i < shape.vertices.length; i++) {
+    const p1 = shape.vertices[i];
+    const p2 = i === shape.vertices.length - 1 ? shape.vertices[0] : shape.vertices[i + 1];
+    edges.push([p1, p2]);
+  }
+  return edges;
 }

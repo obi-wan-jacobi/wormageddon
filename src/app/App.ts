@@ -28,9 +28,4 @@ export default class App<TControllers extends Index<IController>> extends Engine
       this.controllers[name].init();
     }
   }
-
-  // public once(): void {
-  //   super.once();
-  //   (this.controllers.worm as any).once();
-  // }
 }

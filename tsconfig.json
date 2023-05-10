@@ -3,7 +3,7 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "outDir": "./build",
-    "rootDir": "./src",
+    "rootDir": "./",
     "allowJs": false,
     "target": "esnext",
     "module": "esnext",
@@ -18,6 +18,6 @@
       "app/*": ["app/*"]
     }
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "test/**/*.ts"],
   "exclude": ["node_modules"]
 }
