@@ -1,9 +1,8 @@
 import { HTML5CanvasViewport, IController, IHTML5CanvasElement } from '@plasmastrapi/html5-canvas';
 import { Index } from '@plasmastrapi/base';
-import { Engine } from '@plasmastrapi/engine';
-import { Stor } from '@plasmastrapi/ecs';
+import { Engine, Stor } from '@plasmastrapi/ecs';
 
-export default class App<TControllers extends Index<IController>> extends Engine<CanvasImageSource> {
+export default class App<TControllers extends Index<IController>> extends Engine {
   public readonly root: IHTML5CanvasElement;
   public readonly controllers: TControllers;
 
@@ -27,5 +26,9 @@ export default class App<TControllers extends Index<IController>> extends Engine
     for (const name in this.controllers) {
       this.controllers[name].init();
     }
+  }
+
+  public load(src: string): void {
+    this.viewport.load(src);
   }
 }

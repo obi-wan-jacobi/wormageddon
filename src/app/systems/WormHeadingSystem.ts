@@ -1,6 +1,6 @@
-import { IComponentMaster, PoseComponent, ShapeComponent, System } from '@plasmastrapi/ecs';
-import { fromPointsToGeoJSON, fromShapeToGeoJSON, getAngleBetweenPoints, transformShape } from '@plasmastrapi/geometry';
-import { LevelComponent } from '@plasmastrapi/physics';
+import { LevelComponent } from '@plasmastrapi/common';
+import { IComponentMaster, System } from '@plasmastrapi/ecs';
+import { GeoJSON, Point, PoseComponent, Shape, ShapeComponent } from '@plasmastrapi/geometry';
 import WormStateComponent from 'app/components/WormStateComponent';
 import Worm from 'app/entities/Worm';
 import { WORM_FACING } from 'app/enums/WORM_FACING';
@@ -25,7 +25,7 @@ export function getWormHeading(worm: Worm, components: IComponentMaster): WORM_H
   // throw a vertical line behind us, find the first intersection if one exists, then set heading away from that point
   const throwDistance = 5;
   const steepnessThreshold = 100;
-  const verticalLine = fromPointsToGeoJSON([
+  const verticalLine = GeoJSON.createFromPoints([
     { x: pose.x - f * throwDistance, y: pose.y - steepnessThreshold },
     { x: pose.x - f * throwDistance, y: pose.y + steepnessThreshold },
   ]);
@@ -37,11 +37,11 @@ export function getWormHeading(worm: Worm, components: IComponentMaster): WORM_H
     const level = levelComponent.$entity;
     const levelPose = level.$copy(PoseComponent);
     const levelShape = level.$copy(ShapeComponent);
-    const levelGeoJSON = fromShapeToGeoJSON(transformShape(levelShape, levelPose));
+    const levelGeoJSON = GeoJSON.createFromShape(Shape.transform(levelShape, levelPose));
     const intersections = lineIntersect(levelGeoJSON, verticalLine);
     if (intersections.features.length > 0) {
       const [x, y] = intersections.features.shift().geometry.coordinates;
-      const angle = getAngleBetweenPoints({ x, y }, pose);
+      const angle = Point.getAngleBetweenPoints({ x, y }, pose);
       if (angle < 2.85 && angle > 0.2915) {
         heading = WORM_HEADING.DOWN;
       } else if (angle > -2.7 && angle < -0.4415) {

@@ -1,21 +1,20 @@
-import { FPSSystem } from '@plasmastrapi/diagnostics';
 import App from './App';
-import { ImageSystem, LabelSystem, LineSystem, PoseSystem, ShapeSystem } from '@plasmastrapi/engine';
 import { InputController } from '@plasmastrapi/html5-canvas';
 import WormController from './controllers/WormController';
 import WormInputHandler from './input-handlers/WormInputHandler';
 import LevelController from './controllers/LevelController';
 import WormStateSystem from './systems/WormStateSystem';
 import WormWalkingSystem from './systems/WormWalkingSystem';
-import { AccelerationSystem, GravitySystem, ImpulseSystem, VelocitySystem } from '@plasmastrapi/physics';
+import { AccelerationSystem, GravitySystem, PoseSystem, VelocitySystem } from '@plasmastrapi/physics';
 import WormHeadingSystem from './systems/WormHeadingSystem';
-import { AnimationSystem } from '@plasmastrapi/animation';
-import WormVelocitySystem from './systems/WormVelocitySystem';
 import WormReticleSystem from './systems/WormReticleSystem';
-import WormCollisionSystem from './systems/WormCollisionSystem';
-import HandleController from './controllers/HandleController';
-import HandleInputHandler from './input-handlers/HandleInputHandler';
-import HandleSystem from './systems/HandleSystem';
+import PikumaSystem from './systems/PikumaSystem';
+import { AnimationSystem, ImageSystem, LabelSystem, LineSystem, ShapeSystem } from '@plasmastrapi/graphics';
+import { FPSSystem } from '@plasmastrapi/diagnostics';
+import VisualsSystem from './systems/VisualsSystem';
+import AtomSystem from './systems/AtomSystem';
+import AtomController from './controllers/AtomController';
+import AtomInputHandler from './input-handlers/AtomInputHandler';
 
 const canvas = document.getElementById('app-target') as HTMLCanvasElement;
 canvas.width = 1280;
@@ -28,7 +27,7 @@ export const app = new App({
     input: new InputController({ canvas }),
     worm: new WormController(),
     level: new LevelController(),
-    handle: new HandleController(),
+    atom: new AtomController(),
   },
   systems: [
     PoseSystem,
@@ -38,18 +37,17 @@ export const app = new App({
     ImageSystem,
     AnimationSystem,
     FPSSystem,
-    ImpulseSystem,
     GravitySystem,
     AccelerationSystem,
     VelocitySystem,
 
-    // WormVelocitySystem,
-    WormCollisionSystem,
+    // AtomSystem,
+    PikumaSystem,
     WormHeadingSystem,
     WormStateSystem,
     WormWalkingSystem,
     WormReticleSystem,
-    HandleSystem,
+    VisualsSystem,
   ],
 });
 
@@ -96,4 +94,5 @@ app.load('./assets/crshairr.png');
 
 app.init();
 app.controllers.input.setHandler(WormInputHandler);
+// app.controllers.input.setHandler(AtomInputHandler);
 app.start();

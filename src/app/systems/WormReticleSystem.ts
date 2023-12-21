@@ -1,5 +1,5 @@
-import { IComponentMaster, PoseComponent } from '@plasmastrapi/ecs';
-import { RenderingSystem } from '@plasmastrapi/engine';
+import { IComponentMaster, RenderingSystem } from '@plasmastrapi/ecs';
+import { PoseComponent } from '@plasmastrapi/geometry';
 import { IViewport } from '@plasmastrapi/viewport';
 import ReticleComponent from 'app/components/ReticleComponent';
 import WormStateComponent from 'app/components/WormStateComponent';
@@ -8,7 +8,7 @@ import { WORM_ACTION } from 'app/enums/WORM_ACTION';
 import { WORM_FACING } from 'app/enums/WORM_FACING';
 
 export default class WormReticleSystem extends RenderingSystem {
-  public draw({ components, viewport }: { components: IComponentMaster; viewport: IViewport<any> }): void {
+  public draw({ components, viewport }: { components: IComponentMaster; viewport: IViewport }): void {
     components.forEvery(WormStateComponent)((wsComponent) => {
       const { action, facing } = wsComponent.copy();
       if (action !== WORM_ACTION.AIM) {

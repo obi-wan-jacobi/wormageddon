@@ -21,7 +21,3 @@ export function buildFrames(
   }
   return images;
 }
-
-export function isPoseEqual(p1: { x: number; y: number }, p2: { x: number; y: number }, epsilon: number): boolean {
-  return Math.abs(p1.x - p2.x) <= epsilon && Math.abs(p1.y - p2.y) <= epsilon;
-}

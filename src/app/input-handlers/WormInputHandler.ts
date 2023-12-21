@@ -8,6 +8,7 @@ export default class WormInputHandler extends InputHandler {
     ArrowRight: () => app.controllers.worm.startWalkingRight(),
     ArrowUp: () => app.controllers.worm.startAimingUp(),
     ArrowDown: () => app.controllers.worm.startAimingDown(),
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     ' ': () => app.controllers.worm.jumpForward(),
   };
 
