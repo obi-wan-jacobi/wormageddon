@@ -1,0 +1,3 @@
+export enum WEAPON_NAME {
+  BLOWTORCH = 'BLOWTORCH',
+}

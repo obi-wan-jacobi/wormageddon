@@ -1,5 +1,4 @@
 import App from './App';
-import { InputController } from '@plasmastrapi/html5-canvas';
 import WormController from './controllers/WormController';
 import WormInputHandler from './input-handlers/WormInputHandler';
 import LevelController from './controllers/LevelController';
@@ -7,7 +6,7 @@ import WormStateSystem from './systems/WormStateSystem';
 import WormWalkingSystem from './systems/WormWalkingSystem';
 import { AccelerationSystem, GravitySystem, PoseSystem, VelocitySystem } from '@plasmastrapi/physics';
 import WormHeadingSystem from './systems/WormHeadingSystem';
-import WormReticleSystem from './systems/WormReticleSystem';
+import ReticleSystem from './systems/ReticleSystem';
 import PikumaSystem from './systems/PikumaSystem';
 import { AnimationSystem, ImageSystem, LabelSystem, LineSystem, ShapeSystem } from '@plasmastrapi/graphics';
 import { FPSSystem } from '@plasmastrapi/diagnostics';
@@ -15,6 +14,10 @@ import VisualsSystem from './systems/VisualsSystem';
 import AtomSystem from './systems/AtomSystem';
 import AtomController from './controllers/AtomController';
 import AtomInputHandler from './input-handlers/AtomInputHandler';
+import ViewportController from './controllers/ViewportController';
+import ViewportInputHandler from './input-handlers/ViewportInputHandler';
+import InputController from './InputController';
+import { BooleanLevelSubtractorSystem } from './systems/BooleanLevelSubtractorSystem';
 
 const canvas = document.getElementById('app-target') as HTMLCanvasElement;
 canvas.width = 1280;
@@ -24,10 +27,11 @@ canvas.focus();
 export const app = new App({
   canvas,
   controllers: {
+    // atom: new AtomController(),
     input: new InputController({ canvas }),
-    worm: new WormController(),
     level: new LevelController(),
-    atom: new AtomController(),
+    viewport: new ViewportController(),
+    worm: new WormController(),
   },
   systems: [
     PoseSystem,
@@ -35,7 +39,7 @@ export const app = new App({
     LineSystem,
     LabelSystem,
     ImageSystem,
-    AnimationSystem,
+    // AnimationSystem,
     FPSSystem,
     GravitySystem,
     AccelerationSystem,
@@ -46,53 +50,61 @@ export const app = new App({
     WormHeadingSystem,
     WormStateSystem,
     WormWalkingSystem,
-    WormReticleSystem,
+    ReticleSystem,
     VisualsSystem,
+    BooleanLevelSubtractorSystem,
   ],
 });
 
-// breathe
-app.load('./assets/idle/wbrth1L.png');
-app.load('./assets/idle/wbrth1LD.png');
-app.load('./assets/idle/wbrth1LU.png');
-app.load('./assets/idle/wbrth1R.png');
-app.load('./assets/idle/wbrth1RD.png');
-app.load('./assets/idle/wbrth1RU.png');
-// walk
-app.load('./assets/walk/wwalkL.png');
-app.load('./assets/walk/wwalkLD.png');
-app.load('./assets/walk/wwalkLU.png');
-app.load('./assets/walk/wwalkR.png');
-app.load('./assets/walk/wwalkRD.png');
-app.load('./assets/walk/wwalkRU.png');
-// jump
-app.load('./assets/jump/wjumpL.png');
-app.load('./assets/jump/wjumpLD.png');
-app.load('./assets/jump/wjumpLU.png');
-app.load('./assets/jump/wjumpR.png');
-app.load('./assets/jump/wjumpRD.png');
-app.load('./assets/jump/wjumpRU.png');
-// arc
-app.load('./assets/arc/warcL.png');
-app.load('./assets/arc/warcR.png');
-// land
-app.load('./assets/land/wland1L.png');
-app.load('./assets/land/wland1LD.png');
-app.load('./assets/land/wland1LU.png');
-app.load('./assets/land/wland1R.png');
-app.load('./assets/land/wland1RD.png');
-app.load('./assets/land/wland1RU.png');
-// slide
-app.load('./assets/slide/wslideL.png');
-app.load('./assets/slide/wslideLD.png');
-app.load('./assets/slide/wslideLU.png');
-app.load('./assets/slide/wslideR.png');
-app.load('./assets/slide/wslideRD.png');
-app.load('./assets/slide/wslideRU.png');
-// crosshair
-app.load('./assets/crshairr.png');
+[
+  // air
+  './assets/fly/wflyLD.png',
+  './assets/fly/wflyRD.png',
+  // arc
+  './assets/arc/warcL.png',
+  './assets/arc/warcR.png',
+  // fall
+  './assets/fall/wfallL.png',
+  './assets/fall/wfallR.png',
+  // idle
+  './assets/idle/wbrth1L.png',
+  './assets/idle/wbrth1LD.png',
+  './assets/idle/wbrth1LU.png',
+  './assets/idle/wbrth1R.png',
+  './assets/idle/wbrth1RD.png',
+  './assets/idle/wbrth1RU.png',
+  // jump
+  './assets/jump/wjumpL.png',
+  './assets/jump/wjumpLD.png',
+  './assets/jump/wjumpLU.png',
+  './assets/jump/wjumpR.png',
+  './assets/jump/wjumpRD.png',
+  './assets/jump/wjumpRU.png',
+  // land
+  './assets/land/wland1L.png',
+  './assets/land/wland1LD.png',
+  './assets/land/wland1LU.png',
+  './assets/land/wland1R.png',
+  './assets/land/wland1RD.png',
+  './assets/land/wland1RU.png',
+  // walk
+  './assets/walk/wwalkL.png',
+  './assets/walk/wwalkLD.png',
+  './assets/walk/wwalkLU.png',
+  './assets/walk/wwalkR.png',
+  './assets/walk/wwalkRD.png',
+  './assets/walk/wwalkRU.png',
+].forEach((src) => app.load(src));
+
+[
+  // crosshair
+  './assets/crshairr.png',
+].forEach((src) => app.load(src));
 
 app.init();
-app.controllers.input.setHandler(WormInputHandler);
+app.controllers.input.setHandlers([
+  [ViewportInputHandler, {}],
+  [WormInputHandler, {}],
+]);
 // app.controllers.input.setHandler(AtomInputHandler);
 app.start();

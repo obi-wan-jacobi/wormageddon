@@ -1,21 +1,13 @@
 /* eslint-disable no-extra-boolean-cast */
 import { LevelComponent } from '@plasmastrapi/common';
 import { IComponentMaster, IEntityMaster, System } from '@plasmastrapi/ecs';
-import { Vector, INormalizedVector, Edge, IShape, Shape, IPose, PoseComponent, ShapeComponent } from '@plasmastrapi/geometry';
+import { Vector, PoseComponent } from '@plasmastrapi/geometry';
 import { VelocityComponent } from '@plasmastrapi/physics';
-import { COLOUR, IViewport } from '@plasmastrapi/viewport';
+import { IViewport } from '@plasmastrapi/viewport';
+import WormStateComponent from 'app/components/WormStateComponent';
 import Worm from 'app/entities/Worm';
+import { WORM_ACTION } from 'app/enums/WORM_ACTION';
 import { getPenetrationDepthWithLevelBasedOnMotion } from 'app/utils';
-
-const STYLE_GREEN = { colour: 'lightgreen', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_GREEN_BIG = { colour: 'lightgreen', fill: 'lightgreen', opacity: 1, zIndex: 9999 };
-const STYLE_RED = { colour: 'red', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_RED_BIG = { colour: 'red', fill: 'red', opacity: 1, zIndex: 9999 };
-const STYLE_YELLOW = { colour: 'yellow', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_BLUE = { colour: 'blue', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_WHITE = { colour: 'white', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_PINK = { colour: 'pink', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_ORANGE = { colour: 'orange', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
 
 export default class PikumaSystem extends System {
   public once({
@@ -37,15 +29,19 @@ export default class PikumaSystem extends System {
       components.forEvery(LevelComponent)((levelComponent) => {
         const level = levelComponent.$entity;
         const penetration = getPenetrationDepthWithLevelBasedOnMotion(worm, level);
-        if (penetration !== undefined) {
-          const resolvedPose = {
-            x: nextPose.x - u.direction.x * (penetration + 0.1),
-            y: nextPose.y - u.direction.y * (penetration + 0.1),
-            a: nextPose.a,
-          };
-          worm.$patch(PoseComponent, resolvedPose);
-          worm.$patch(VelocityComponent, { x: 0, y: 0, w: 0 });
+        if (penetration === undefined) {
           return;
+        }
+        const resolutionDistance = penetration + 0.1;
+        const resolvedPose = {
+          x: nextPose.x - u.direction.x * resolutionDistance,
+          y: nextPose.y - u.direction.y * resolutionDistance,
+          a: nextPose.a,
+        };
+        worm.$patch(PoseComponent, resolvedPose);
+        worm.$patch(VelocityComponent, { x: 0, y: 0, w: 0 });
+        if ([WORM_ACTION.ARC, WORM_ACTION.AIR, WORM_ACTION.FALL].includes(worm.$copy(WormStateComponent).action)) {
+          worm.$patch(WormStateComponent, { action: WORM_ACTION.LAND });
         }
       });
     });

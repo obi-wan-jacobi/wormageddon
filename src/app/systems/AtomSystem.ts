@@ -2,19 +2,9 @@
 import { LevelComponent } from '@plasmastrapi/common';
 import { IComponentMaster, IEntityMaster, System } from '@plasmastrapi/ecs';
 import { Vector, Shape, PoseComponent, ShapeComponent } from '@plasmastrapi/geometry';
-import { COLOUR, IViewport } from '@plasmastrapi/viewport';
+import { IViewport } from '@plasmastrapi/viewport';
 import Atom from 'app/entities/Atom';
-import { getPenetrationDepthWithLevelBasedOnMotion } from 'app/utils';
-
-const STYLE_GREEN = { colour: 'lightgreen', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_GREEN_BIG = { colour: 'lightgreen', fill: 'lightgreen', opacity: 1, zIndex: 9999 };
-const STYLE_RED = { colour: 'red', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_RED_BIG = { colour: 'red', fill: 'red', opacity: 1, zIndex: 9999 };
-const STYLE_YELLOW = { colour: 'yellow', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_BLUE = { colour: 'blue', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_WHITE = { colour: 'white', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_PINK = { colour: 'pink', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_ORANGE = { colour: 'orange', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
+import { STYLE_GREEN, STYLE_RED, getPenetrationDepthWithLevelBasedOnMotion } from 'app/utils';
 
 export default class AtomSystem extends System {
   public once({

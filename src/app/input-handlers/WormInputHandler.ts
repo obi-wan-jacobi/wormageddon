@@ -1,22 +1,33 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import { Index } from '@plasmastrapi/base';
 import { IKeyboardEvent, InputHandler, KEYBOARD_EVENT } from '@plasmastrapi/html5-canvas';
 import { app } from 'app/main';
 
 export default class WormInputHandler extends InputHandler {
   private __keyDownMap: Index<Function> = {
-    ArrowLeft: () => app.controllers.worm.startWalkingLeft(),
-    ArrowRight: () => app.controllers.worm.startWalkingRight(),
-    ArrowUp: () => app.controllers.worm.startAimingUp(),
-    ArrowDown: () => app.controllers.worm.startAimingDown(),
-    // eslint-disable-next-line @typescript-eslint/naming-convention
+    // movement
+    w: () => app.controllers.worm.startAimingUp(),
+    s: () => app.controllers.worm.startAimingDown(),
+    a: () => app.controllers.worm.startWalkingLeft(),
+    d: () => app.controllers.worm.startWalkingRight(),
+    // jumping
     ' ': () => app.controllers.worm.jumpForward(),
+    // firing
+    f: () => app.controllers.worm.startFiring(),
   };
 
   private __keyUpMap: Index<Function> = {
-    ArrowLeft: () => app.controllers.worm.stopWalkingLeft(),
-    ArrowRight: () => app.controllers.worm.stopWalkingRight(),
-    ArrowUp: () => app.controllers.worm.stopAimingUp(),
-    ArrowDown: () => app.controllers.worm.stopAimingDown(),
+    // movement
+    w: () => app.controllers.worm.stopAimingUp(),
+    s: () => app.controllers.worm.stopAimingDown(),
+    a: () => app.controllers.worm.stopWalkingLeft(),
+    d: () => app.controllers.worm.stopWalkingRight(),
+    // equip
+    e: () => app.controllers.worm.equip(),
+    // unequip
+    q: () => app.controllers.worm.unequip(),
+    // firing
+    f: () => app.controllers.worm.stopFiring(),
   };
 
   public init(): void {}

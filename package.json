@@ -44,10 +44,10 @@
     "@plasmastrapi/diagnostics": "^1.0.24",
     "@plasmastrapi/ecs": "^1.0.27",
     "@plasmastrapi/geometry": "^1.0.29",
-    "@plasmastrapi/graphics": "^1.0.2",
+    "@plasmastrapi/graphics": "^1.0.3",
     "@plasmastrapi/html5-canvas": "^1.0.18",
     "@plasmastrapi/math": "^1.0.10",
     "@plasmastrapi/physics": "^1.0.15",
-    "@plasmastrapi/viewport": "^1.0.10"
+    "@plasmastrapi/viewport": "^1.0.11"
   }
 }

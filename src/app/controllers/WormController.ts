@@ -1,24 +1,32 @@
-import { HTML5CanvasElement, IController } from '@plasmastrapi/html5-canvas';
+import { Point, Rectangle } from '@plasmastrapi/geometry';
+import { AnimationComponent } from '@plasmastrapi/graphics';
+import { IController } from '@plasmastrapi/html5-canvas';
+import { CONSTANTS } from 'app/CONSTANTS';
 import ReticleComponent from 'app/components/ReticleComponent';
+import WeaponComponent from 'app/components/WeaponComponent';
 import WormStateComponent from 'app/components/WormStateComponent';
+import BooleanLevelSubtractor from 'app/entities/BooleanLevelSubtractor';
 import Worm from 'app/entities/Worm';
 import { WORM_ACTION } from 'app/enums/WORM_ACTION';
 import { WORM_FACING } from 'app/enums/WORM_FACING';
+import { getActiveWeaponFramesBasedOnAimingPosition } from 'app/systems/WormStateSystem';
+import { degToRad } from 'app/utils';
+import blowtorch from 'app/weapons/BlowTorch';
 
 export default class WormController implements IController {
-  private __worm: HTML5CanvasElement;
+  private __worm: Worm;
 
   public init(): void {
-    this.__worm = new Worm({ x: 100, y: 100 });
+    this.__worm = new Worm({ x: 50, y: 100 });
   }
 
   @SaveStoredState([WORM_FACING.LEFT, WORM_ACTION.WALK])
-  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.WALK, WORM_ACTION.AIM])
+  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.WALK, WORM_ACTION.AIM, WORM_ACTION.EQUIP, WORM_ACTION.UNEQUIP])
   @UpdateWormState([WORM_FACING.LEFT, WORM_ACTION.WALK])
   public startWalkingLeft(): void {}
 
   @SaveStoredState([WORM_FACING.RIGHT, WORM_ACTION.WALK])
-  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.WALK, WORM_ACTION.AIM])
+  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.WALK, WORM_ACTION.AIM, WORM_ACTION.EQUIP, WORM_ACTION.UNEQUIP])
   @UpdateWormState([WORM_FACING.RIGHT, WORM_ACTION.WALK])
   public startWalkingRight(): void {}
 
@@ -34,42 +42,101 @@ export default class WormController implements IController {
   @UpdateWormAction(WORM_ACTION.IDLE)
   public stopWalkingRight(): void {}
 
-  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.WALK, WORM_ACTION.AIM])
+  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.WALK, WORM_ACTION.AIM, WORM_ACTION.EQUIP, WORM_ACTION.UNEQUIP])
   @UpdateWormAction(WORM_ACTION.JUMP)
   public jumpForward(): void {}
 
-  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.AIM])
+  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.AIM, WORM_ACTION.EQUIP, WORM_ACTION.UNEQUIP])
   @UpdateWormAction(WORM_ACTION.AIM)
   public startAimingUp(): void {
-    const { angle } = this.__worm.$copy(ReticleComponent);
-    let a = radToDeg(angle);
-    if (a > -90) {
-      a -= 6;
-      this.__worm.$patch(ReticleComponent, { angle: degToRad(a) });
-    }
+    startAiming(this.__worm, 'UP');
   }
 
-  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.AIM])
+  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.AIM, WORM_ACTION.EQUIP, WORM_ACTION.UNEQUIP])
   @UpdateWormAction(WORM_ACTION.AIM)
   public startAimingDown(): void {
-    const { angle } = this.__worm.$copy(ReticleComponent);
-    let a = radToDeg(angle);
-    if (a < 90) {
-      a += 6;
-      this.__worm.$patch(ReticleComponent, { angle: degToRad(a) });
-    }
+    startAiming(this.__worm, 'DOWN');
   }
 
   @AllowedDuring([WORM_ACTION.AIM])
-  @UpdateWormAction(WORM_ACTION.AIM)
   public stopAimingUp(): void {}
 
   @AllowedDuring([WORM_ACTION.AIM])
-  @UpdateWormAction(WORM_ACTION.AIM)
   public stopAimingDown(): void {}
+
+  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.AIM])
+  @UpdateWormAction(WORM_ACTION.EQUIP)
+  public equip(): void {
+    this.__worm.$add(WeaponComponent, blowtorch);
+  }
+
+  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.AIM])
+  @UpdateWormAction(WORM_ACTION.UNEQUIP)
+  public unequip(): void {}
+
+  @AllowedDuring([WORM_ACTION.IDLE, WORM_ACTION.AIM, WORM_ACTION.EQUIP, WORM_ACTION.WALK])
+  @UpdateWormAction(WORM_ACTION.FIRE)
+  public startFiring(): void {
+    if (!this.__worm.$has(WeaponComponent)) {
+      restorePreviousAction(this.__worm);
+      return;
+    }
+    const weapon = this.__worm.$copy(WeaponComponent);
+    const aimingIndex = weapon.aimingIndex ?? Math.round((weapon.aimingIncrementsInDegrees!.length - 1) / 2);
+    const { facing } = this.__worm.$copy(WormStateComponent);
+    const f = facing === WORM_FACING.LEFT ? -1 : 1;
+    const aimingAngleRadians = degToRad(f * weapon.aimingIncrementsInDegrees![aimingIndex]);
+    const position = Point.rotateAboutOrigin({ x: f * 17, y: -1.1 }, aimingAngleRadians);
+    this.__worm.$appendChild(
+      new BooleanLevelSubtractor({
+        pose: { x: position.x, y: position.y, a: aimingAngleRadians },
+        shape: Rectangle.create(20, CONSTANTS.WORM.HEIGHT + 2),
+      }),
+    );
+  }
+
+  @AllowedDuring([WORM_ACTION.FIRE])
+  @UpdateWormAction(WORM_ACTION.IDLE)
+  public stopFiring(): void {
+    this.__worm.$children.find((child) => child instanceof BooleanLevelSubtractor)?.$destroy();
+  }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function startAiming(worm: Worm, aimingDirection: 'UP' | 'DOWN'): void {
+  // if no weapon then skip aiming altogether and restore previous action
+  if (!worm.$has(WeaponComponent)) {
+    restorePreviousAction(worm);
+    return;
+  }
+  const weapon = worm.$copy(WeaponComponent);
+  const numberOfAimingIncrements = weapon.aimingIncrementsInDegrees?.length;
+  if (numberOfAimingIncrements !== undefined && numberOfAimingIncrements > 0) {
+    let aimingIndex = weapon.aimingIndex ?? Math.round((numberOfAimingIncrements - 1) / 2);
+    if (aimingIndex === (aimingDirection === 'UP' ? 0 : numberOfAimingIncrements - 1)) {
+      return;
+    }
+    aimingIndex = aimingDirection === 'UP' ? aimingIndex - 1 : aimingIndex + 1;
+    worm.$patch(WeaponComponent, { aimingIndex });
+    worm.$patch(ReticleComponent, { angle: degToRad(weapon.aimingIncrementsInDegrees![aimingIndex]) });
+    const images = getActiveWeaponFramesBasedOnAimingPosition(worm);
+    worm.$mutate(AnimationComponent, {
+      images,
+      frame: 0,
+      durationMs: 0,
+    });
+    return;
+  }
+  // weapon does not support aiming
+  worm.$patch(WeaponComponent, { isEquipped: true });
+  worm.$patch(WormStateComponent, { action: WORM_ACTION.IDLE });
+}
+
+function restorePreviousAction(worm: Worm): void {
+  const { $ } = worm.$copy(WormStateComponent);
+  const action = $ !== undefined ? $.previous.action : WORM_ACTION.IDLE;
+  worm.$patch(WormStateComponent, { action });
+}
+
 function UpdateWormState(state: [facing: WORM_FACING, action: WORM_ACTION]) {
   return ({}, {}, descriptor: PropertyDescriptor): void => {
     const fn = descriptor.value;
@@ -81,7 +148,6 @@ function UpdateWormState(state: [facing: WORM_FACING, action: WORM_ACTION]) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function UpdateWormAction(action: WORM_ACTION) {
   return ({}, {}, descriptor: PropertyDescriptor): void => {
     const fn = descriptor.value;
@@ -92,7 +158,6 @@ function UpdateWormAction(action: WORM_ACTION) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function OveriddenByState(state: [facing: WORM_FACING, action: WORM_ACTION]) {
   return ({}, {}, descriptor: PropertyDescriptor): void => {
     const fn = descriptor.value;
@@ -106,7 +171,6 @@ function OveriddenByState(state: [facing: WORM_FACING, action: WORM_ACTION]) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function OveriddenByAction(action: WORM_ACTION) {
   return ({}, {}, descriptor: PropertyDescriptor): void => {
     const fn = descriptor.value;
@@ -119,7 +183,6 @@ function OveriddenByAction(action: WORM_ACTION) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function AllowedDuring(actions: WORM_ACTION[]) {
   return ({}, {}, descriptor: PropertyDescriptor): void => {
     const fn = descriptor.value;
@@ -132,7 +195,6 @@ function AllowedDuring(actions: WORM_ACTION[]) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function ClearStoredState({}, {}, descriptor: PropertyDescriptor): void {
   const fn = descriptor.value;
   descriptor.value = function (): void {
@@ -143,7 +205,6 @@ function ClearStoredState({}, {}, descriptor: PropertyDescriptor): void {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function SaveStoredState(state: [facing: WORM_FACING, action: WORM_ACTION]) {
   return ({}, {}, descriptor: PropertyDescriptor): void => {
     const fn = descriptor.value;
@@ -153,12 +214,4 @@ function SaveStoredState(state: [facing: WORM_FACING, action: WORM_ACTION]) {
       fn.apply(this, arguments);
     };
   };
-}
-
-function radToDeg(rads: number): number {
-  return Math.round((rads * 180) / Math.PI);
-}
-
-function degToRad(degs: number): number {
-  return (Math.round(degs) * Math.PI) / 180;
 }

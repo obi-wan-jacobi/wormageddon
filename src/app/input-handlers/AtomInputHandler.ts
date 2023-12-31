@@ -7,10 +7,10 @@ export default class AtomInputHandler extends InputHandler {
   public dispose(): void {}
 
   [MOUSE_EVENT.CLICK](event: MouseEvent): void {
-    app.controllers.atom.click(event);
+    (app.controllers as any).atom.click(event);
   }
 
   [MOUSE_EVENT.MOUSE_MOVE](event: MouseEvent): void {
-    app.controllers.atom.mousemove(event);
+    (app.controllers as any).atom.mousemove(event);
   }
 }

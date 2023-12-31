@@ -12,18 +12,8 @@ import {
   booleanPointInPolygon,
 } from '@plasmastrapi/geometry';
 import { Epsilon } from '@plasmastrapi/math';
-import { COLOUR, IStyle, IViewport } from '@plasmastrapi/viewport';
-import { highlightEdge, highlightPoint } from './utils';
-
-const STYLE_GREEN = { colour: 'lightgreen', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_GREEN_BIG = { colour: 'lightgreen', fill: 'lightgreen', opacity: 1, zIndex: 9999 };
-const STYLE_RED = { colour: 'red', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_RED_BIG = { colour: 'red', fill: 'red', opacity: 1, zIndex: 9999 };
-const STYLE_YELLOW = { colour: 'yellow', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_BLUE = { colour: 'blue', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_WHITE = { colour: 'white', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_PINK = { colour: 'pink', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
-const STYLE_ORANGE = { colour: 'orange', fill: COLOUR.RGBA_0, opacity: 1, zIndex: 9999 };
+import { IViewport } from '@plasmastrapi/viewport';
+import { STYLE_BLUE, STYLE_GREEN, STYLE_WHITE, STYLE_YELLOW, highlightEdge, highlightPoint } from './utils';
 
 export function extrude(shape: IShape, from: IPose, to: IPose, epsilon = 0.000001, viewport?: IViewport): IShape {
   if (to.x === from.x) {
